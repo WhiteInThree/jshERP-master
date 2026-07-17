@@ -77,6 +77,7 @@
           <a-button v-if="btnEnableList.indexOf(1)>-1" icon="delete" @click="batchDel">删除</a-button>
           <a-button v-if="btnEnableList.indexOf(1)>-1" icon="edit" @click="handleQuickEdit">备注</a-button>
           <a-button v-if="quickBtn.purchaseOrder.indexOf(1)>-1 && btnEnableList.indexOf(1)>-1" icon="share-alt" @click="transferBill('转采购订单', quickBtn.purchaseOrder)">转采购订单</a-button>
+          <a-button v-if="canConfirmIssue" icon="export" :loading="issueLoading" @click="confirmIssue">确认发放</a-button>
           <a-tooltip title="可将状态是部分采购的单据强制完成">
             <a-button v-if="btnEnableList.indexOf(1)>-1" icon="issues-close" @click="batchForceClose">强制结单</a-button>
           </a-tooltip>
@@ -163,6 +164,7 @@
         <!-- 表单区域 -->
         <purchase-apply-modal ref="modalForm" @ok="modalFormOk" @close="modalFormClose"></purchase-apply-modal>
         <purchase-order-modal ref="transferModalForm" @ok="modalFormOk" @close="modalFormClose"></purchase-order-modal>
+        <other-out-modal ref="issueModalForm" @ok="modalFormOk" @close="modalFormClose"></other-out-modal>
         <bill-detail ref="modalDetail" @ok="modalFormOk" @close="modalFormClose"></bill-detail>
         <bill-excel-iframe ref="billExcelIframe" @ok="modalFormOk" @close="modalFormClose"></bill-excel-iframe>
         <quick-edit-modal ref="quickEditModal" @ok="modalFormOk" @close="modalFormClose"></quick-edit-modal>
@@ -174,6 +176,7 @@
 <script>
   import PurchaseApplyModal from './modules/PurchaseApplyModal'
   import PurchaseOrderModal from './modules/PurchaseOrderModal'
+  import OtherOutModal from './modules/OtherOutModal'
   import BillDetail from './dialog/BillDetail'
   import BillExcelIframe from '@/components/tools/BillExcelIframe'
   import QuickEditModal from './dialog/QuickEditModal'
@@ -181,12 +184,14 @@
   import { BillListMixin } from './mixins/BillListMixin'
   import JEllipsis from '@/components/jeecg/JEllipsis'
   import JDate from '@/components/jeecg/JDate'
+  import { getAction } from '@/api/manage'
   export default {
     name: "PurchaseApplyList",
     mixins:[JeecgListMixin,BillListMixin],
     components: {
       PurchaseApplyModal,
       PurchaseOrderModal,
+      OtherOutModal,
       BillDetail,
       BillExcelIframe,
       QuickEditModal,
@@ -195,6 +200,8 @@
     },
     data () {
       return {
+        roleCode: '',
+        issueLoading: false,
         // 查询条件
         queryParam: {
           number: "",
@@ -248,10 +255,55 @@
       this.initUser()
       this.initQuickBtn()
       this.getDepotByCurrentUser()
+      this.loadCurrentRoleCode()
     },
     computed: {
+      canConfirmIssue() {
+        return this.roleCode === 'ROLE_ADMIN' || this.roleCode === 'ROLE_OFFICE'
+      }
     },
     methods: {
+      loadCurrentRoleCode() {
+        getAction('/user/getRoleTypeByCurrentUser').then((res) => {
+          if(res && res.code === 200) {
+            this.roleCode = res.data.roleCode || ''
+          }
+        })
+      },
+      confirmIssue() {
+        if(this.selectedRowKeys.length !== 1) {
+          this.$message.warning('请选择一条领用申请！')
+          return
+        }
+        const info = this.selectionRows[0]
+        if(info.status !== '1') {
+          this.$message.warning('只能发放已审核的领用申请！')
+          return
+        }
+        this.issueLoading = true
+        const params = {
+          headerId: info.id,
+          mpList: '',
+          linkType: 'basic'
+        }
+        getAction('/depotItem/getDetailList', params).then((res) => {
+          if(res && res.code === 200) {
+            const issueModal = this.$refs.issueModalForm
+            issueModal.action = 'add'
+            issueModal.transferParam = {
+              issueMode: true,
+              list: res.data.rows,
+              number: info.number,
+              remark: info.remark
+            }
+            issueModal.defaultDepotId = this.defaultDepotId
+            issueModal.add()
+            issueModal.title = '确认发放'
+          }
+        }).finally(() => {
+          this.issueLoading = false
+        })
+      }
     }
   }
 </script>

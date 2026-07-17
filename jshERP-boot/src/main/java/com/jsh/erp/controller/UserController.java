@@ -8,6 +8,7 @@ import com.jsh.erp.base.TableDataInfo;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.Tenant;
+import com.jsh.erp.datasource.entities.Role;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.entities.UserEx;
 import com.jsh.erp.datasource.vo.TreeNodeEx;
@@ -416,8 +417,9 @@ public class UserController extends BaseController {
         try {
             Map<String, Object> data = new HashMap<String, Object>();
             Long userId = userService.getUserId(request);
-            String roleType = userService.getRoleTypeByUserId(userId).getType(); //角色类型
-            data.put("roleType", roleType);
+            Role role = userService.getRoleTypeByUserId(userId);
+            data.put("roleType", role.getType());
+            data.put("roleCode", role.getValue());
             res.code = 200;
             res.data = data;
         } catch(Exception e){

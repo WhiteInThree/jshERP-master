@@ -608,6 +608,17 @@ public class DepotHeadController extends BaseController {
     }
 
     /**
+     * 将已审核的领用申请确认发放为其它出库单
+     */
+    @PostMapping(value = "/confirmIssue")
+    @ApiOperation(value = "领用申请确认发放")
+    public Object confirmIssue(@RequestBody DepotHeadVo4Body body, HttpServletRequest request) throws Exception {
+        JSONObject result = ExceptionConstants.standardSuccess();
+        depotHeadService.confirmIssue(body.getInfo(), body.getRows(), request);
+        return result;
+    }
+
+    /**
      * 更新单据主表及单据子表信息
      * @param body
      * @param request

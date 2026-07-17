@@ -14,12 +14,13 @@
     style="top:20px;height: 95%;">
     <template slot="footer">
       <a-button @click="handleCancel">取消</a-button>
-      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrintPro('其它出库')">三联打印-新版</a-button>
-      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrint('其它出库')">三联打印</a-button>
-      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">保存并审核</a-button>
-      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">保存（Ctrl+S）</a-button>
+      <a-button v-if="!issueMode && billPrintFlag && isShowPrintBtn" @click="handlePrintPro('其它出库')">三联打印-新版</a-button>
+      <a-button v-if="!issueMode && billPrintFlag && isShowPrintBtn" @click="handlePrint('其它出库')">三联打印</a-button>
+      <a-button v-if="issueMode" type="primary" :loading="confirmLoading" @click="handleConfirmIssue">确认发放（Ctrl+S）</a-button>
+      <a-button v-if="!issueMode && checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">保存并审核</a-button>
+      <a-button v-if="!issueMode" type="primary" :loading="confirmLoading" @click="handleOkOnly">保存（Ctrl+S）</a-button>
       <!--发起多级审核-->
-      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">提交流程</a-button>
+      <a-button v-if="!issueMode && !checkFlag" @click="handleWorkflow()" type="primary">提交流程</a-button>
     </template>
     <a-spin :spinning="confirmLoading">
       <a-form :form="form">
@@ -159,6 +160,7 @@
     },
     data () {
       return {
+        issueMode: false,
         title:"操作",
         width: '1600px',
         moreStatus: false,
@@ -248,6 +250,8 @@
     methods: {
       //调用完edit()方法之后会自动调用此方法
       editAfter() {
+        this.issueMode = !!(this.transferParam && this.transferParam.issueMode)
+        this.url.add = this.issueMode ? '/depotHead/confirmIssue' : '/depotHead/addDepotHeadAndDetail'
         this.billStatus = '0'
         this.currentSelectDepotId = ''
         this.rowCanEdit = true
@@ -261,6 +265,11 @@
         if (this.action === 'add') {
           this.addInit(this.prefixNo)
           this.fileList = []
+          this.$nextTick(() => {
+            if(this.issueMode && this.transferParam.number) {
+              this.waitBillListOk(this.transferParam.list, this.transferParam.number, this.transferParam.remark)
+            }
+          })
         } else {
           if(this.model.linkNumber) {
             this.rowCanEdit = false
@@ -328,6 +337,9 @@
         this.materialTable.columns[1].type = FormTypes.normal
         this.changeFormTypes(this.materialTable.columns, 'preNumber', 1)
         this.changeFormTypes(this.materialTable.columns, 'finishNumber', 1)
+        if(this.issueMode) {
+          this.changeFormTypes(this.materialTable.columns, 'operNumber', 1)
+        }
         if(selectBillDetailRows && selectBillDetailRows.length>0) {
           let listEx = []
           for(let j=0; j<selectBillDetailRows.length; j++) {
@@ -349,6 +361,14 @@
             })
           })
         }
+      },
+      handleConfirmIssue() {
+        this.billStatus = '1'
+        this.handleOk()
+      },
+      handleOkOnly() {
+        this.billStatus = this.issueMode ? '1' : '0'
+        this.handleOk()
       }
     }
   }

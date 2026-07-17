@@ -52,6 +52,8 @@ public class DepotHeadService {
     @Resource
     private DepotService depotService;
     @Resource
+    private MaterialExtendService materialExtendService;
+    @Resource
     DepotItemService depotItemService;
     @Resource
     private SupplierService supplierService;
@@ -1225,6 +1227,77 @@ public class DepotHeadService {
     }
 
     /**
+     * 确认发放领用申请，并复用原有其它出库保存和库存处理逻辑。
+     */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public void confirmIssue(String beanJson, String rows, HttpServletRequest request) throws Exception {
+        DepotHead issueHead = JSONObject.parseObject(beanJson, DepotHead.class);
+        User currentUser = userService.getCurrentUser();
+        if(!userService.isAdminOrOfficeUser(currentUser)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_PERMISSION_MSG);
+        }
+        if(!BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(issueHead.getType())
+                || !BusinessConstants.SUB_TYPE_OTHER.equals(issueHead.getSubType())
+                || !BusinessConstants.BILLS_STATUS_AUDIT.equals(issueHead.getStatus())
+                || StringUtil.isEmpty(issueHead.getLinkNumber())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_STATUS_MSG);
+        }
+
+        DepotHead purchaseApply = depotHeadMapperEx.getDepotHeadForUpdate(issueHead.getLinkNumber());
+        if(purchaseApply == null
+                || !BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(purchaseApply.getType())
+                || !BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(purchaseApply.getSubType())
+                || !BusinessConstants.BILLS_STATUS_AUDIT.equals(purchaseApply.getStatus())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_STATUS_MSG);
+        }
+
+        DepotHeadExample example = new DepotHeadExample();
+        example.createCriteria().andLinkNumberEqualTo(purchaseApply.getNumber())
+                .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_OUT)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_OTHER)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        if(depotHeadMapper.countByExample(example) > 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_REPEAT_MSG);
+        }
+        checkConfirmIssueDetails(purchaseApply, rows);
+        addDepotHeadAndDetailInternal(beanJson, rows, request);
+    }
+
+    private void checkConfirmIssueDetails(DepotHead purchaseApply, String rows) throws Exception {
+        List<DepotItem> applyItems = depotItemService.getListByHeaderId(purchaseApply.getId());
+        JSONArray issueRows = JSONArray.parseArray(rows);
+        if(issueRows == null || applyItems.size() != issueRows.size()) {
+            throwConfirmIssueDetailException();
+        }
+        Map<Long, DepotItem> applyItemMap = applyItems.stream()
+                .collect(Collectors.toMap(DepotItem::getId, item -> item));
+        for(int i = 0; i < issueRows.size(); i++) {
+            JSONObject row = issueRows.getJSONObject(i);
+            DepotItem applyItem = applyItemMap.remove(row.getLong("linkId"));
+            MaterialExtend materialExtend = materialExtendService.getInfoByBarCode(row.getString("barCode"));
+            if(applyItem == null || materialExtend == null
+                    || !applyItem.getMaterialExtendId().equals(materialExtend.getId())
+                    || !Objects.equals(applyItem.getMaterialUnit(), row.getString("unit"))
+                    || row.getBigDecimal("operNumber") == null
+                    || applyItem.getOperNumber().compareTo(row.getBigDecimal("operNumber")) != 0) {
+                throwConfirmIssueDetailException();
+            }
+        }
+        if(!applyItemMap.isEmpty()) {
+            throwConfirmIssueDetailException();
+        }
+    }
+
+    private void throwConfirmIssueDetailException() {
+        throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
+                ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_DETAIL_MSG);
+    }
+
+    /**
      * 新增单据主表及单据子表信息
      * @param beanJson
      * @param rows
@@ -1234,6 +1307,23 @@ public class DepotHeadService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void addDepotHeadAndDetail(String beanJson, String rows,
                                       HttpServletRequest request) throws Exception {
+        DepotHead depotHead = JSONObject.parseObject(beanJson, DepotHead.class);
+        if(BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType())
+                && StringUtil.isNotEmpty(depotHead.getLinkNumber())) {
+            DepotHead linkHead = getDepotHead(depotHead.getLinkNumber());
+            if(linkHead.getId() != null
+                    && BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(linkHead.getType())
+                    && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(linkHead.getSubType())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
+                        ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_ENTRY_MSG);
+            }
+        }
+        addDepotHeadAndDetailInternal(beanJson, rows, request);
+    }
+
+    private void addDepotHeadAndDetailInternal(String beanJson, String rows,
+                                               HttpServletRequest request) throws Exception {
         /**处理单据主表数据*/
         DepotHead depotHead = JSONObject.parseObject(beanJson, DepotHead.class);
         //判断用户是否已经登录过，登录过不再处理
