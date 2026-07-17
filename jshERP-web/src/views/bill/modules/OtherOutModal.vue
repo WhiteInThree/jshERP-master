@@ -338,6 +338,8 @@
         this.changeFormTypes(this.materialTable.columns, 'preNumber', 1)
         this.changeFormTypes(this.materialTable.columns, 'finishNumber', 1)
         if(this.issueMode) {
+          // 出入库管理关闭时关联单据字段不会渲染，需要直接写入主表模型。
+          this.model.linkNumber = linkNumber
           this.changeFormTypes(this.materialTable.columns, 'operNumber', 1)
         }
         if(selectBillDetailRows && selectBillDetailRows.length>0) {
