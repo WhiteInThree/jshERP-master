@@ -235,7 +235,7 @@
         tabKey: "1",
         pageName: 'outDetail',
         // 默认索引
-        defDataIndex:['rowIndex','number','barCode','mname','standard','model','mUnit','operNumber', 'unitPrice','allPrice',
+        defDataIndex:['rowIndex','number','issueDepartment','barCode','mname','standard','model','mUnit','operNumber', 'unitPrice','allPrice',
           'taxRate','taxMoney','sname','dname','operTime','newRemark'],
         // 默认列
         defColumns: [
@@ -249,6 +249,7 @@
             title: '单据编号', dataIndex: 'number', width: 100,
             scopedSlots: { customRender: 'numberCustomRender' },
           },
+          {title: '部门', dataIndex: 'issueDepartment', width: 80, ellipsis:true},
           {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 80},
           {title: '名称', dataIndex: 'mname', width: 120, ellipsis:true},
           {title: '规格', dataIndex: 'standard', width: 60, ellipsis:true},
@@ -280,9 +281,21 @@
       this.loadAllOrgaData()
       this.loadCategoryTreeData()
       this.initColumnsSetting()
+      this.migrateDepartmentColumnSetting()
     },
     methods: {
       moment,
+      migrateDepartmentColumnSetting() {
+        const columnsStr = Vue.ls.get(this.pageName)
+        if(columnsStr && columnsStr.indexOf(',') > -1) {
+          const columns = columnsStr.split(',')
+          if(columns.indexOf('issueDepartment') === -1) {
+            columns.splice(2, 0, 'issueDepartment')
+            Vue.ls.set(this.pageName, columns.join())
+            this.initColumnsSetting()
+          }
+        }
+      },
       getQueryParams() {
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
@@ -395,11 +408,11 @@
       },
       exportExcel() {
         let list = []
-        let head = '单据编号,条码,名称,规格,型号,颜色,品牌,制造商,单位,多属性,数量,单价,金额,税率(%),税额,往来单位,仓库,出库日期,备注'
+        let head = '单据编号,部门,条码,名称,规格,型号,颜色,品牌,制造商,单位,多属性,数量,单价,金额,税率(%),税额,往来单位,仓库,出库日期,备注'
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
-          item.push(ds.number, ds.barCode, ds.mname, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs, ds.mUnit, ds.sku,
+          item.push(ds.number, ds.issueDepartment, ds.barCode, ds.mname, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs, ds.mUnit, ds.sku,
             ds.operNumber, ds.unitPrice, ds.allPrice, ds.taxRate, ds.taxMoney, ds.sname, ds.dname, ds.operTime, ds.newRemark)
           list.push(item)
         }

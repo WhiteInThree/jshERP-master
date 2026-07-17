@@ -59,6 +59,7 @@
                       <a-select-option value="1">已审核</a-select-option>
                       <a-select-option value="3">部分采购</a-select-option>
                       <a-select-option value="2">完成采购</a-select-option>
+                      <a-select-option value="4">已发放</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -145,6 +146,7 @@
               <a-tag v-if="status == '1'" color="green">已审核</a-tag>
               <a-tag v-if="status == '2'" color="cyan">完成采购</a-tag>
               <a-tag v-if="status == '3'" color="blue">部分采购</a-tag>
+              <a-tag v-if="status == '4'" color="purple">已发放</a-tag>
               <a-tag v-if="status == '9'" color="orange">审核中</a-tag>
             </template>
             <a-table
@@ -294,6 +296,7 @@
               issueMode: true,
               list: res.data.rows,
               number: info.number,
+              departmentName: info.issueDepartment,
               remark: info.remark
             }
             issueModal.defaultDepotId = this.defaultDepotId

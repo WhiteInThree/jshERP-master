@@ -43,20 +43,6 @@
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="客户" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择客户" showSearch allow-clear optionFilterProp="children" v-model="queryParam.organId" @search="handleSearchCustomer">
-                      <div slot="dropdownRender" slot-scope="menu">
-                        <v-nodes :vnodes="menu" />
-                        <a-divider style="margin: 4px 0;" />
-                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initCustomer(0)"><a-icon type="reload" /> 刷新列表</div>
-                      </div>
-                      <a-select-option v-for="(item,index) in cusList" :key="index" :value="item.id">
-                        {{ item.supplier }}
-                      </a-select-option>
-                    </a-select>
-                  </a-form-item>
-                </a-col>
-                <a-col :md="6" :sm="24">
                   <a-form-item label="仓库名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-select placeholder="请选择仓库" showSearch allow-clear optionFilterProp="children" v-model="queryParam.depotId">
                       <a-select-option v-for="(depot,index) in depotList" :key="index" :value="depot.id">
@@ -77,6 +63,13 @@
                 <a-col :md="6" :sm="24">
                   <a-form-item label="关联单据" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-input placeholder="请输入关联单据" v-model="queryParam.linkNumber"></a-input>
+                  </a-form-item>
+                </a-col>
+                <a-col :md="6" :sm="24" v-if="orgaTree.length">
+                  <a-form-item label="申请部门" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-tree-select style="width:100%" allow-clear :treeData="orgaTree"
+                                   v-model="queryParam.organizationId" placeholder="请选择申请部门">
+                    </a-tree-select>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
@@ -199,6 +192,8 @@
   import JEllipsis from '@/components/jeecg/JEllipsis'
   import JDate from '@/components/jeecg/JDate'
   import { deleteAction } from '@/api/manage'
+  import { getAllOrganizationTreeByUser } from '@/api/api'
+  import Vue from 'vue'
   export default {
     name: "OtherOutList",
     mixins:[JeecgListMixin,BillListMixin],
@@ -208,11 +203,7 @@
       BillExcelIframe,
       BatchWaitBillList,
       JEllipsis,
-      JDate,
-      VNodes: {
-        functional: true,
-        render: (h, ctx) => ctx.props.vnodes,
-      }
+      JDate
     },
     data () {
       return {
@@ -222,7 +213,6 @@
           materialParam: "",
           type: "出库",
           subType: "其它",
-          organId: undefined,
           depotId: undefined,
           creator: undefined,
           linkNumber: "",
@@ -233,6 +223,7 @@
         urlPath: '/bill/other_out',
         //出入库管理开关，适合独立仓管场景
         inOutManageFlag: false,
+        orgaTree: [],
         labelCol: {
           span: 5
         },
@@ -241,7 +232,7 @@
           offset: 1
         },
         // 默认索引
-        defDataIndex:['action','organName','number','materialsList','operTimeStr','userName','materialCount','totalPrice','status'],
+        defDataIndex:['action','issueDepartment','number','materialsList','operTimeStr','userName','materialCount','totalPrice','status'],
         // 默认列
         defColumns: [
           {
@@ -250,7 +241,7 @@
             align:"center", width: 160,
             scopedSlots: { customRender: 'action' },
           },
-          { title: '客户', dataIndex: 'organName',width:120, ellipsis:true},
+          { title: '申请部门', dataIndex: 'issueDepartment',width:120, ellipsis:true},
           { title: '单据编号', dataIndex: 'number',width:160,
             customRender:function (text,record,index) {
               text = record.linkNumber?text+"[转]":text
@@ -280,12 +271,31 @@
     },
     created() {
       this.initSystemConfig()
-      this.initCustomer()
       this.getDepotData()
       this.initUser()
+      this.loadAllOrgaData()
       this.initWaitBillCount('出库', '销售,采购退货', '1,3')
+      this.migrateDepartmentColumnSetting()
     },
     methods: {
+      migrateDepartmentColumnSetting() {
+        const columnsStr = Vue.ls.get(this.prefixNo)
+        if(columnsStr && columnsStr.indexOf(',') > -1) {
+          const columns = columnsStr.split(',').filter(item => item !== 'organName')
+          if(columns.indexOf('issueDepartment') === -1) {
+            columns.splice(1, 0, 'issueDepartment')
+          }
+          Vue.ls.set(this.prefixNo, columns.join())
+          this.initColumnsSetting()
+        }
+      },
+      loadAllOrgaData() {
+        getAllOrganizationTreeByUser({}).then((res) => {
+          if(res) {
+            this.orgaTree = res
+          }
+        })
+      },
       searchQuery() {
         this.loadData(1)
         if(this.inOutManageFlag) {

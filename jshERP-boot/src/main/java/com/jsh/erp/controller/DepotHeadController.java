@@ -91,13 +91,14 @@ public class DepotHeadController extends BaseController {
         String endTime = StringUtil.getInfo(search, "endTime");
         String materialParam = StringUtil.getInfo(search, "materialParam");
         Long organId = StringUtil.parseStrLong(StringUtil.getInfo(search, "organId"));
+        Long organizationId = StringUtil.parseStrLong(StringUtil.getInfo(search, "organizationId"));
         Long creator = StringUtil.parseStrLong(StringUtil.getInfo(search, "creator"));
         Long depotId = StringUtil.parseStrLong(StringUtil.getInfo(search, "depotId"));
         Long accountId = StringUtil.parseStrLong(StringUtil.getInfo(search, "accountId"));
         String salesMan = StringUtil.getInfo(search, "salesMan");
         String remark = StringUtil.getInfo(search, "remark");
         List<DepotHeadVo4List> list = depotHeadService.select(type, subType, hasDebt, hasLastDebt, status, purchaseStatus, number, linkApply, linkNumber,
-                beginTime, endTime, materialParam, organId, creator, depotId, accountId, salesMan, remark);
+                beginTime, endTime, materialParam, organId, organizationId, creator, depotId, accountId, salesMan, remark);
         return getDataTable(list);
     }
 

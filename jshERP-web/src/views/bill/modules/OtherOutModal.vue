@@ -26,8 +26,9 @@
       <a-form :form="form">
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="客户">
-              <a-select placeholder="请选择客户" v-decorator="[ 'organId' ]" :disabled="!rowCanEdit"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="issueMode ? '申请部门' : '客户'">
+              <a-input v-if="issueMode" :value="transferParam.departmentName" disabled />
+              <a-select v-else placeholder="请选择客户" v-decorator="[ 'organId' ]" :disabled="!rowCanEdit"
                 :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children" @change="handleOrganChange" @search="handleSearchCustomer">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
@@ -341,6 +342,8 @@
           // 出入库管理关闭时关联单据字段不会渲染，需要直接写入主表模型。
           this.model.linkNumber = linkNumber
           this.changeFormTypes(this.materialTable.columns, 'operNumber', 1)
+          this.changeFormTypes(this.materialTable.columns, 'unitPrice', 1)
+          this.changeFormTypes(this.materialTable.columns, 'allPrice', 1)
         }
         if(selectBillDetailRows && selectBillDetailRows.length>0) {
           let listEx = []
@@ -349,8 +352,8 @@
             if(info.finishNumber>0) {
               info.operNumber = info.preNumber - info.finishNumber
             }
-            info.unitPrice = 0
-            info.allPrice = 0
+            info.unitPrice = this.issueMode ? (info.purchaseDecimal || 0) : 0
+            info.allPrice = this.issueMode ? (info.operNumber * info.unitPrice).toFixed(2)-0 : 0
             info.linkId = info.id
             listEx.push(info)
             this.changeColumnShow(info)

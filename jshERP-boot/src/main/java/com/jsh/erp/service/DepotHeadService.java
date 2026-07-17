@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -108,7 +109,7 @@ public class DepotHeadService {
     }
 
     public List<DepotHeadVo4List> select(String type, String subType, String hasDebt, String hasLastDebt, String status, String purchaseStatus, String number, String linkApply, String linkNumber,
-           String beginTime, String endTime, String materialParam, Long organId, Long creator, Long depotId, Long accountId, String salesMan, String remark) throws Exception {
+           String beginTime, String endTime, String materialParam, Long organId, Long organizationId, Long creator, Long depotId, Long accountId, String salesMan, String remark) throws Exception {
         List<DepotHeadVo4List> list = new ArrayList<>();
         try{
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
@@ -120,6 +121,7 @@ public class DepotHeadService {
             String [] statusArray = StringUtil.isNotEmpty(status) ? status.split(",") : null;
             String [] purchaseStatusArray = StringUtil.isNotEmpty(purchaseStatus) ? purchaseStatus.split(",") : null;
             String [] organArray = getOrganArray(subType, purchaseStatus);
+            String [] issueCreatorArray = organizationId == null ? null : getCreatorArrayByOrg(organizationId);
             //以销定购，查看全部数据
             creatorArray = StringUtil.isNotEmpty(purchaseStatus) ? null: creatorArray;
             Map<Long,String> personMap = personService.getPersonMap();
@@ -129,7 +131,7 @@ public class DepotHeadService {
             PageUtils.startPage();
             list = depotHeadMapperEx.selectByConditionDepotHead(type, subType, creatorArray, hasDebt, hasLastDebt,
                     statusArray, purchaseStatusArray, number, linkApply, linkNumber, beginTime, endTime,
-                    materialParam, organId, organArray, creator, depotId, depotArray, accountId, salesMan, remark);
+                    materialParam, organId, organArray, issueCreatorArray, creator, depotId, depotArray, accountId, salesMan, remark);
             if (null != list) {
                 List<Long> idList = new ArrayList<>();
                 List<String> numberList = new ArrayList<>();
@@ -1263,11 +1265,15 @@ public class DepotHeadService {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
                     ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_REPEAT_MSG);
         }
-        checkConfirmIssueDetails(purchaseApply, rows);
-        addDepotHeadAndDetailInternal(beanJson, rows, request);
+        String issueRows = prepareConfirmIssueDetails(purchaseApply, issueHead, rows);
+        addDepotHeadAndDetailInternal(JSONObject.toJSONString(issueHead), issueRows, request);
+        DepotHead issuedApply = new DepotHead();
+        issuedApply.setId(purchaseApply.getId());
+        issuedApply.setStatus(BusinessConstants.BILLS_STATUS_ISSUED);
+        depotHeadMapper.updateByPrimaryKeySelective(issuedApply);
     }
 
-    private void checkConfirmIssueDetails(DepotHead purchaseApply, String rows) throws Exception {
+    private String prepareConfirmIssueDetails(DepotHead purchaseApply, DepotHead issueHead, String rows) throws Exception {
         List<DepotItem> applyItems = depotItemService.getListByHeaderId(purchaseApply.getId());
         JSONArray issueRows = JSONArray.parseArray(rows);
         if(issueRows == null || applyItems.size() != issueRows.size()) {
@@ -1275,6 +1281,7 @@ public class DepotHeadService {
         }
         Map<Long, DepotItem> applyItemMap = applyItems.stream()
                 .collect(Collectors.toMap(DepotItem::getId, item -> item));
+        BigDecimal totalPrice = BigDecimal.ZERO;
         for(int i = 0; i < issueRows.size(); i++) {
             JSONObject row = issueRows.getJSONObject(i);
             DepotItem applyItem = applyItemMap.remove(row.getLong("linkId"));
@@ -1286,10 +1293,19 @@ public class DepotHeadService {
                     || applyItem.getOperNumber().compareTo(row.getBigDecimal("operNumber")) != 0) {
                 throwConfirmIssueDetailException();
             }
+            BigDecimal unitPrice = materialExtend.getPurchaseDecimal() == null
+                    ? BigDecimal.ZERO : materialExtend.getPurchaseDecimal();
+            BigDecimal allPrice = row.getBigDecimal("operNumber").multiply(unitPrice)
+                    .setScale(2, RoundingMode.HALF_UP);
+            row.put("unitPrice", unitPrice);
+            row.put("allPrice", allPrice);
+            totalPrice = totalPrice.add(allPrice);
         }
         if(!applyItemMap.isEmpty()) {
             throwConfirmIssueDetailException();
         }
+        issueHead.setTotalPrice(totalPrice);
+        return issueRows.toJSONString();
     }
 
     private void throwConfirmIssueDetailException() {
@@ -1913,6 +1929,8 @@ public class DepotHeadService {
                         return "完成采购";
                     case "3":
                         return "部分采购";
+                    case "4":
+                        return "已发放";
                 }
             } else if("sale".equals(type)) {
                 switch (status) {

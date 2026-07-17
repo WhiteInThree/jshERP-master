@@ -66,12 +66,13 @@ public class BusinessConstants {
     public static final String ENABLE_BATCH_NUMBER_ENABLED = "1";
     public static final String ENABLE_BATCH_NUMBER_NOT_ENABLED = "0";
     /**
-     * 单据状态 billsStatus '0'未审核 '1'审核 '2'完成采购|销售 '3'部分采购|销售
+     * 单据状态 billsStatus '0'未审核 '1'审核 '2'完成采购|销售 '3'部分采购|销售 '4'已发放
      * */
     public static final String BILLS_STATUS_UN_AUDIT = "0";
     public static final String BILLS_STATUS_AUDIT = "1";
     public static final String BILLS_STATUS_SKIPED = "2";
     public static final String BILLS_STATUS_SKIPING = "3";
+    public static final String BILLS_STATUS_ISSUED = "4";
     /**
      * 单据-采购状态 purchaseStatus '0'未采购、'2'完成采购、'3'部分采购
      * */

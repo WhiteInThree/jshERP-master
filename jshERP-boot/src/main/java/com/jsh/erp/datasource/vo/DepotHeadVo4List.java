@@ -11,6 +11,8 @@ public class DepotHeadVo4List extends DepotHead{
 
     private String organName;
 
+    private String issueDepartment;
+
     private String userName;
 
     private String accountName;
@@ -90,6 +92,14 @@ public class DepotHeadVo4List extends DepotHead{
 
     public void setOrganName(String organName) {
         this.organName = organName;
+    }
+
+    public String getIssueDepartment() {
+        return issueDepartment;
+    }
+
+    public void setIssueDepartment(String issueDepartment) {
+        this.issueDepartment = issueDepartment;
     }
 
     public String getUserName() {

@@ -42,6 +42,8 @@ public class DepotHeadVo4InDetail {
 
     private String sname;
 
+    private String issueDepartment;
+
     private String dname;
 
     private String operTime;
@@ -49,6 +51,14 @@ public class DepotHeadVo4InDetail {
     private String newType;
 
     private Long tenantId;
+
+    public String getIssueDepartment() {
+        return issueDepartment;
+    }
+
+    public void setIssueDepartment(String issueDepartment) {
+        this.issueDepartment = issueDepartment;
+    }
 
     public String getNumber() {
         return number;

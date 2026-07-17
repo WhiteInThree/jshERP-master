@@ -204,7 +204,7 @@
         tabKey: "1",
         pageName: 'outMaterialCount',
         // 默认索引
-        defDataIndex:['rowIndex','barCode','mName','standard','model','categoryName','materialUnit','numSum','priceSum'],
+        defDataIndex:['rowIndex','issueDepartment','barCode','mName','standard','model','categoryName','materialUnit','numSum','priceSum'],
         // 默认列
         defColumns: [
           {
@@ -213,6 +213,7 @@
               return (t !== '合计') ? (parseInt(index) + 1) : t
             }
           },
+          {title: '发放部门', dataIndex: 'issueDepartment', width: 120, ellipsis:true},
           {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 120},
           {title: '名称', dataIndex: 'mName', width: 120, ellipsis:true},
           {title: '规格', dataIndex: 'standard', width: 100, ellipsis:true},
@@ -336,11 +337,11 @@
       },
       exportExcel() {
         let list = []
-        let head = '条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,出库数量,出库金额'
+        let head = '发放部门,条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,出库数量,出库金额'
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
-          item.push(ds.barCode, ds.mName, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs,
+          item.push(ds.issueDepartment, ds.barCode, ds.mName, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs,
             ds.categoryName, ds.materialUnit, ds.numSum, ds.priceSum)
           list.push(item)
         }
