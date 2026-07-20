@@ -278,8 +278,8 @@
           return
         }
         const info = this.selectionRows[0]
-        if(info.status !== '1') {
-          this.$message.warning('只能发放已审核的领用申请！')
+        if(info.status !== '1' && info.status !== '2') {
+          this.$message.warning('只能发放已审核或完成采购的领用申请！')
           return
         }
         this.issueLoading = true

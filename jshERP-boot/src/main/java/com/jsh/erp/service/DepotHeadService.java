@@ -778,7 +778,12 @@ public class DepotHeadService {
             DepotHead depotHead = getDepotHead(id);
             if("0".equals(status)){
                 //进行反审核操作
-                if("1".equals(depotHead.getStatus()) && "0".equals(depotHead.getPurchaseStatus())) {
+                if(BusinessConstants.BILLS_STATUS_ISSUED.equals(depotHead.getStatus())
+                        && BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                        && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())) {
+                    result += reverseIssuedPurchaseApply(depotHead);
+                    continue;
+                } else if("1".equals(depotHead.getStatus()) && "0".equals(depotHead.getPurchaseStatus())) {
                     dhIds.add(id);
                     noList.add(depotHead.getNumber());
                 } else if("2".equals(depotHead.getPurchaseStatus())) {
@@ -827,7 +832,7 @@ public class DepotHeadService {
             depotHead.setStatus(status);
             DepotHeadExample example = new DepotHeadExample();
             example.createCriteria().andIdIn(dhIds);
-            result = depotHeadMapper.updateByExampleSelective(depotHead, example);
+            result += depotHeadMapper.updateByExampleSelective(depotHead, example);
             //更新当前库存
             if(systemConfigService.getForceApprovalFlag()) {
                 for(Long dhId: dhIds) {
@@ -845,6 +850,41 @@ public class DepotHeadService {
                         ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
             }
         }
+        return result;
+    }
+
+    private int reverseIssuedPurchaseApply(DepotHead purchaseApply) throws Exception {
+        DepotHeadExample issueExample = new DepotHeadExample();
+        issueExample.createCriteria().andLinkNumberEqualTo(purchaseApply.getNumber())
+                .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_OUT)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_OTHER)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        List<DepotHead> issueList = depotHeadMapper.selectByExample(issueExample);
+        if(issueList.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_AUDIT_TO_UN_AUDIT_FAILED_CODE,
+                    "抱歉，未找到该领用申请对应的发放出库单");
+        }
+        List<Long> issueIds = issueList.stream().map(DepotHead::getId).collect(Collectors.toList());
+        DepotHead unAuditIssue = new DepotHead();
+        unAuditIssue.setStatus(BusinessConstants.BILLS_STATUS_UN_AUDIT);
+        DepotHeadExample updateIssueExample = new DepotHeadExample();
+        updateIssueExample.createCriteria().andIdIn(issueIds);
+        depotHeadMapper.updateByExampleSelective(unAuditIssue, updateIssueExample);
+        batchDeleteBillByIds(issueIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
+
+        DepotHeadExample purchaseOrderExample = new DepotHeadExample();
+        purchaseOrderExample.createCriteria().andLinkApplyEqualTo(purchaseApply.getNumber())
+                .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_OTHER)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_PURCHASE_ORDER)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        String restoreStatus = depotHeadMapper.countByExample(purchaseOrderExample) > 0
+                ? BusinessConstants.BILLS_STATUS_SKIPED : BusinessConstants.BILLS_STATUS_AUDIT;
+        DepotHead restoredApply = new DepotHead();
+        restoredApply.setId(purchaseApply.getId());
+        restoredApply.setStatus(restoreStatus);
+        int result = depotHeadMapper.updateByPrimaryKeySelective(restoredApply);
+        logService.insertLog("单据", "[撤回发放]" + purchaseApply.getNumber(),
+                ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
         return result;
     }
 
@@ -1251,7 +1291,8 @@ public class DepotHeadService {
         if(purchaseApply == null
                 || !BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(purchaseApply.getType())
                 || !BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(purchaseApply.getSubType())
-                || !BusinessConstants.BILLS_STATUS_AUDIT.equals(purchaseApply.getStatus())) {
+                || (!BusinessConstants.BILLS_STATUS_AUDIT.equals(purchaseApply.getStatus())
+                    && !BusinessConstants.BILLS_STATUS_SKIPED.equals(purchaseApply.getStatus()))) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
                     ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_STATUS_MSG);
         }

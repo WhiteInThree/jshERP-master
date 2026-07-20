@@ -72,6 +72,20 @@
         left join jsh_organization issue_org on issue_org.id=issue_rel.orga_id and ifnull(issue_org.delete_flag,'0') !='1'
     </sql>
 
+    <sql id="CreatorOrIssueDepartmentCondition">
+        <if test="creatorArray != null">
+            and ((apply_dh.id is not null and apply_dh.creator in (
+            <foreach collection="creatorArray" item="creator" separator=",">
+                #{creator}
+            </foreach>
+            )) or (apply_dh.id is null and dh.creator in (
+            <foreach collection="creatorArray" item="creator" separator=",">
+                #{creator}
+            </foreach>
+            )))
+        </if>
+    </sql>
+
     <resultMap id="ResultStatementAccount" type="com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount">
         <result column="number" jdbcType="VARCHAR" property="number" />
         <result column="type" jdbcType="VARCHAR" property="type" />
@@ -274,17 +288,7 @@
         <if test="inOutManageFlag">
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
-        <if test="creatorArray != null">
-            and (dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ) or apply_dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ))
-        </if>
+        <include refid="CreatorOrIssueDepartmentCondition" />
         <if test="organArray != null and organArray !=''">
             and (dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
@@ -361,17 +365,7 @@
         <if test="inOutManageFlag">
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
-        <if test="creatorArray != null">
-            and (dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ) or apply_dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ))
-        </if>
+        <include refid="CreatorOrIssueDepartmentCondition" />
         <if test="organArray != null and organArray !=''">
             and (dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
@@ -434,17 +428,7 @@
         <if test="inOutManageFlag">
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
-        <if test="creatorArray != null">
-            and (dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ) or apply_dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ))
-        </if>
+        <include refid="CreatorOrIssueDepartmentCondition" />
         <if test="organArray != null and organArray !=''">
             and (dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
@@ -499,17 +483,7 @@
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
-        <if test="creatorArray != null">
-            and (dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ) or apply_dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ))
-        </if>
+        <include refid="CreatorOrIssueDepartmentCondition" />
         <if test="organArray != null and organArray !=''">
             and (dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
@@ -587,17 +561,7 @@
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
-        <if test="creatorArray != null">
-            and (dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ) or apply_dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ))
-        </if>
+        <include refid="CreatorOrIssueDepartmentCondition" />
         <if test="organArray != null and organArray !=''">
             and (dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
@@ -662,17 +626,7 @@
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
-        <if test="creatorArray != null">
-            and (dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ) or apply_dh.creator in (
-            <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
-            </foreach>
-            ))
-        </if>
+        <include refid="CreatorOrIssueDepartmentCondition" />
         <if test="organArray != null and organArray !=''">
             and (dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">

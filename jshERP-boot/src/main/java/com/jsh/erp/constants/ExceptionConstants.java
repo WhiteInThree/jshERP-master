@@ -467,7 +467,7 @@ public class ExceptionConstants {
     //领用申请确认发放失败
     public static final int DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE = 8500034;
     public static final String DEPOT_HEAD_CONFIRM_ISSUE_PERMISSION_MSG = "抱歉，只有管理员或办公室可以确认发放";
-    public static final String DEPOT_HEAD_CONFIRM_ISSUE_STATUS_MSG = "抱歉，只能发放已审核的领用申请";
+    public static final String DEPOT_HEAD_CONFIRM_ISSUE_STATUS_MSG = "抱歉，只能发放已审核或完成采购的领用申请";
     public static final String DEPOT_HEAD_CONFIRM_ISSUE_REPEAT_MSG = "抱歉，该领用申请已经确认发放，不能重复操作";
     public static final String DEPOT_HEAD_CONFIRM_ISSUE_DETAIL_MSG = "抱歉，发放明细必须与领用申请一致";
     public static final String DEPOT_HEAD_CONFIRM_ISSUE_ENTRY_MSG = "抱歉，领用申请必须通过确认发放功能生成出库单";
