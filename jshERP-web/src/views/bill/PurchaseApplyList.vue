@@ -57,8 +57,6 @@
                       <a-select-option value="0">未审核</a-select-option>
                       <a-select-option value="9" v-if="!checkFlag">审核中</a-select-option>
                       <a-select-option value="1">已审核</a-select-option>
-                      <a-select-option value="3">部分采购</a-select-option>
-                      <a-select-option value="2">完成采购</a-select-option>
                       <a-select-option value="4">已发放</a-select-option>
                     </a-select>
                   </a-form-item>
@@ -77,13 +75,9 @@
           <a-button v-if="btnEnableList.indexOf(1)>-1" @click="myHandleAdd" type="primary" icon="plus">新增</a-button>
           <a-button v-if="btnEnableList.indexOf(1)>-1" icon="delete" @click="batchDel">删除</a-button>
           <a-button v-if="btnEnableList.indexOf(1)>-1" icon="edit" @click="handleQuickEdit">备注</a-button>
-          <a-button v-if="quickBtn.purchaseOrder.indexOf(1)>-1 && btnEnableList.indexOf(1)>-1" icon="share-alt" @click="transferBill('转采购订单', quickBtn.purchaseOrder)">转采购订单</a-button>
           <a-button v-if="canConfirmIssue" icon="export" :loading="issueLoading" @click="confirmIssue">确认发放</a-button>
-          <a-tooltip title="可将状态是部分采购的单据强制完成">
-            <a-button v-if="btnEnableList.indexOf(1)>-1" icon="issues-close" @click="batchForceClose">强制结单</a-button>
-          </a-tooltip>
-          <a-button v-if="checkFlag && btnEnableList.indexOf(2)>-1" icon="check" @click="batchSetStatus(1)">审核</a-button>
-          <a-button v-if="checkFlag && btnEnableList.indexOf(7)>-1" icon="stop" @click="batchSetStatus(0)">反审核</a-button>
+          <a-button v-if="canAuditApply && checkFlag && btnEnableList.indexOf(2)>-1" icon="check" @click="batchSetStatus(1)">审核</a-button>
+          <a-button v-if="canAuditApply && checkFlag && btnEnableList.indexOf(7)>-1" icon="stop" @click="batchSetStatus(0)">反审核</a-button>
           <a-button v-if="isShowExcel && btnEnableList.indexOf(3)>-1" icon="download" @click="handleExport">导出</a-button>
           <a-popover trigger="click" placement="right">
             <template slot="content">
@@ -108,8 +102,7 @@
             </template>
             <a-button icon="setting">列设置</a-button>
           </a-popover>
-            <a-tooltip placement="left" title="领用申请只涉及数量，办公室审核后可转采购订单。
-          勾选单据之后可以进行批量操作（删除、审核、反审核）" slot="action">
+            <a-tooltip placement="left" :title="applyHelpText" slot="action">
             <a-icon v-if="btnEnableList.indexOf(1)>-1" type="question-circle" style="font-size:20px;float:right;" />
           </a-tooltip>
         </div>
@@ -131,7 +124,7 @@
             @expand="onExpand"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="myHandleDetail(record, '领用申请', prefixNo)">查看</a>
+              <a @click="viewApplyDetail(record)">查看</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
               <a v-if="btnEnableList.indexOf(1)>-1" @click="myHandleEdit(record)">编辑</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
@@ -143,9 +136,7 @@
             </span>
             <template slot="customRenderStatus" slot-scope="status">
               <a-tag v-if="status == '0'" color="red">未审核</a-tag>
-              <a-tag v-if="status == '1'" color="green">已审核</a-tag>
-              <a-tag v-if="status == '2'" color="cyan">完成采购</a-tag>
-              <a-tag v-if="status == '3'" color="blue">部分采购</a-tag>
+              <a-tag v-if="status == '1' || status == '2' || status == '3'" color="green">已审核</a-tag>
               <a-tag v-if="status == '4'" color="purple">已发放</a-tag>
               <a-tag v-if="status == '9'" color="orange">审核中</a-tag>
             </template>
@@ -164,8 +155,7 @@
         </div>
         <!-- table区域-end -->
         <!-- 表单区域 -->
-        <purchase-apply-modal ref="modalForm" @ok="modalFormOk" @close="modalFormClose"></purchase-apply-modal>
-        <purchase-order-modal ref="transferModalForm" @ok="modalFormOk" @close="modalFormClose"></purchase-order-modal>
+        <purchase-apply-modal ref="modalForm" :role-code="roleCode" @ok="modalFormOk" @close="modalFormClose"></purchase-apply-modal>
         <other-out-modal ref="issueModalForm" @ok="modalFormOk" @close="modalFormClose"></other-out-modal>
         <bill-detail ref="modalDetail" @ok="modalFormOk" @close="modalFormClose"></bill-detail>
         <bill-excel-iframe ref="billExcelIframe" @ok="modalFormOk" @close="modalFormClose"></bill-excel-iframe>
@@ -177,7 +167,6 @@
 <!-- by  ji  sheng  hua-->
 <script>
   import PurchaseApplyModal from './modules/PurchaseApplyModal'
-  import PurchaseOrderModal from './modules/PurchaseOrderModal'
   import OtherOutModal from './modules/OtherOutModal'
   import BillDetail from './dialog/BillDetail'
   import BillExcelIframe from '@/components/tools/BillExcelIframe'
@@ -192,7 +181,6 @@
     mixins:[JeecgListMixin,BillListMixin],
     components: {
       PurchaseApplyModal,
-      PurchaseOrderModal,
       OtherOutModal,
       BillDetail,
       BillExcelIframe,
@@ -247,7 +235,6 @@
           list: "/depotHead/list",
           delete: "/depotHead/delete",
           deleteBatch: "/depotHead/deleteBatch",
-          forceCloseBatch: "/depotHead/forceCloseBatch",
           batchSetStatusUrl: "/depotHead/batchSetStatus"
         }
       }
@@ -262,9 +249,24 @@
     computed: {
       canConfirmIssue() {
         return this.roleCode === 'ROLE_ADMIN' || this.roleCode === 'ROLE_OFFICE'
+      },
+      canAuditApply() {
+        return this.roleCode === 'ROLE_ADMIN' || this.roleCode === 'ROLE_OFFICE'
+      },
+      applyHelpText() {
+        return this.canAuditApply
+          ? '领用申请只涉及数量，办公室审核后可确认发放。勾选单据后可以进行删除、审核、反审核或确认发放。'
+          : '领用申请只涉及数量，提交后由办公室审核并确认发放。'
       }
     },
     methods: {
+      viewApplyDetail(record) {
+        this.myHandleDetail(record, '请购单', this.prefixNo)
+        if(!this.canAuditApply) {
+          this.$refs.modalDetail.isCanBackCheck = false
+        }
+        this.$refs.modalDetail.title = '领用申请-详情'
+      },
       loadCurrentRoleCode() {
         getAction('/user/getRoleTypeByCurrentUser').then((res) => {
           if(res && res.code === 200) {
@@ -278,8 +280,8 @@
           return
         }
         const info = this.selectionRows[0]
-        if(info.status !== '1' && info.status !== '2') {
-          this.$message.warning('只能发放已审核或完成采购的领用申请！')
+        if(info.status !== '1' && info.status !== '2' && info.status !== '3') {
+          this.$message.warning('只能发放已审核的领用申请！')
           return
         }
         this.issueLoading = true

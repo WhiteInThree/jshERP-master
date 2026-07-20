@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
+import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.service.FunctionService;
 import com.jsh.erp.service.SystemConfigService;
@@ -174,9 +175,11 @@ public class FunctionController extends BaseController {
             List<Function> dataList = functionService.getRoleFunction(pNumber);
             if (dataList.size() != 0) {
                 User userInfo = userService.getCurrentUser();
+                Role role = userService.getRoleTypeByUserId(userInfo.getId());
+                String roleCode = role == null ? "" : role.getValue();
                 //获取当前用户所属的租户所拥有的功能id的map
                 Map<Long, Long> funIdMap = functionService.getCurrentTenantFunIdMap();
-                dataArray = getMenuByFunction(dataList, fc, approvalFlag, funIdMap, userInfo);
+                dataArray = getMenuByFunction(dataList, fc, approvalFlag, funIdMap, userInfo, roleCode);
                 //增加首页菜单项
                 JSONObject homeItem = new JSONObject();
                 homeItem.put("id", 0);
@@ -192,13 +195,17 @@ public class FunctionController extends BaseController {
         return dataArray;
     }
 
-    public JSONArray getMenuByFunction(List<Function> dataList, String fc, String approvalFlag, Map<Long, Long> funIdMap, User userInfo) throws Exception {
+    public JSONArray getMenuByFunction(List<Function> dataList, String fc, String approvalFlag, Map<Long, Long> funIdMap,
+                                       User userInfo, String roleCode) throws Exception {
         JSONArray dataArray = new JSONArray();
         for (Function function : dataList) {
             //如果不是超管也不是租户就需要校验，防止分配下级用户的功能权限，大于租户的权限
             if("admin".equals(userInfo.getLoginName()) || userInfo.getId().equals(userInfo.getTenantId()) || funIdMap.get(function.getId())!=null) {
                 //如果关闭多级审核，遇到任务审核菜单直接跳过
                 if("0".equals(approvalFlag) && "/workflow".equals(function.getUrl())) {
+                    continue;
+                }
+                if(BusinessConstants.ROLE_CODE_OFFICE.equals(roleCode) && isOfficeHiddenFunction(function)) {
                     continue;
                 }
                 JSONObject item = new JSONObject();
@@ -212,7 +219,7 @@ public class FunctionController extends BaseController {
                 item.put("url", function.getUrl());
                 item.put("component", function.getComponent());
                 if (newList.size()>0) {
-                    JSONArray childrenArr = getMenuByFunction(newList, fc, approvalFlag, funIdMap, userInfo);
+                    JSONArray childrenArr = getMenuByFunction(newList, fc, approvalFlag, funIdMap, userInfo, roleCode);
                     if(childrenArr.size()>0) {
                         item.put("children", childrenArr);
                         dataArray.add(item);
@@ -241,6 +248,23 @@ public class FunctionController extends BaseController {
                 || component.contains("/report")
                 || name.contains("\u62a5\u8868")
                 || name.contains("报表");
+    }
+
+    private boolean isOfficeHiddenFunction(Function function) {
+        String url = function.getUrl() == null ? "" : function.getUrl();
+        String name = function.getName() == null ? "" : function.getName();
+        return "/financial".equals(url)
+                || "/bill/assemble".equals(url)
+                || "/bill/disassemble".equals(url)
+                || "/system/member".equals(url)
+                || "/system/in_out_item".equals(url)
+                || "/system/person".equals(url)
+                || "财务管理".equals(name)
+                || "组装单".equals(name)
+                || "拆卸单".equals(name)
+                || "会员信息".equals(name)
+                || "收支项目".equals(name)
+                || "经手人管理".equals(name);
     }
 
     @GetMapping(value = "/findRoleFunction")

@@ -17,7 +17,7 @@
       <a-button @click="handleCancel">取消</a-button>
       <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrintPro('领用申请')">三联打印-新版</a-button>
       <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrint('领用申请')">三联打印</a-button>
-      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">保存并审核</a-button>
+      <a-button v-if="canAuditApply && checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">保存并审核</a-button>
       <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">保存（Ctrl+S）</a-button>
       <!--发起多级审核-->
       <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">提交流程</a-button>
@@ -117,6 +117,12 @@
   export default {
     name: "PurchaseApplyModal",
     mixins: [JEditableTableMixin,BillModalMixin],
+    props: {
+      roleCode: {
+        type: String,
+        default: ''
+      }
+    },
     components: {
       ImportItemModal,
       HistoryBillList,
@@ -210,6 +216,11 @@
       }
     },
     created () {
+    },
+    computed: {
+      canAuditApply() {
+        return this.roleCode === 'ROLE_ADMIN' || this.roleCode === 'ROLE_OFFICE'
+      }
     },
     methods: {
       //调用完edit()方法之后会自动调用此方法
