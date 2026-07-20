@@ -201,6 +201,7 @@
         numSumTotalStr: '0',
         priceSumTotalStr: '0',
         setTimeFlag: null,
+        roleCode: '',
         tabKey: "1",
         pageName: 'outMaterialCount',
         // 默认索引
@@ -237,9 +238,26 @@
       this.loadAllOrgaData()
       this.loadCategoryTreeData()
       this.initColumnsSetting()
+      this.loadCurrentRoleCode()
     },
     methods: {
       moment,
+      loadCurrentRoleCode() {
+        getAction('/user/getRoleTypeByCurrentUser').then((res) => {
+          if(res && res.code === 200) {
+            this.roleCode = res.data.roleCode || ''
+            if(this.roleCode === 'ROLE_DEPT') {
+              this.updateColumnTitle('numSum', '领用数量')
+            }
+          }
+        })
+      },
+      updateColumnTitle(dataIndex, title) {
+        const defaultColumn = this.defColumns.find(item => item.dataIndex === dataIndex)
+        const currentColumn = this.columns.find(item => item.dataIndex === dataIndex)
+        if(defaultColumn) defaultColumn.title = title
+        if(currentColumn) currentColumn.title = title
+      },
       getQueryParams() {
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
@@ -337,7 +355,8 @@
       },
       exportExcel() {
         let list = []
-        let head = '发放部门,条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,出库数量,出库金额'
+        let quantityTitle = this.roleCode === 'ROLE_DEPT' ? '领用数量' : '出库数量'
+        let head = '发放部门,条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,' + quantityTitle + ',出库金额'
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]

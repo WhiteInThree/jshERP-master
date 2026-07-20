@@ -214,7 +214,7 @@ public class FunctionController extends BaseController {
                     continue;
                 }
                 item.put("id", function.getId());
-                item.put("text", function.getName());
+                item.put("text", getRoleFunctionName(function, roleCode));
                 item.put("icon", function.getIcon());
                 item.put("url", function.getUrl());
                 item.put("component", function.getComponent());
@@ -241,13 +241,22 @@ public class FunctionController extends BaseController {
      */
     private boolean isDepartmentAllowedFunction(Function function) {
         String url = function.getUrl() == null ? "" : function.getUrl();
-        String component = function.getComponent() == null ? "" : function.getComponent();
-        String name = function.getName() == null ? "" : function.getName();
         return url.contains("/bill/purchase_apply")
-                || url.contains("/report")
-                || component.contains("/report")
-                || name.contains("\u62a5\u8868")
-                || name.contains("报表");
+                || "/report/out_detail".equals(url)
+                || "/report/out_material_count".equals(url);
+    }
+
+    private String getRoleFunctionName(Function function, String roleCode) {
+        String url = function.getUrl() == null ? "" : function.getUrl();
+        if(BusinessConstants.ROLE_CODE_DEPT.equals(roleCode)) {
+            if("/report/out_detail".equals(url)) {
+                return "我的领用明细";
+            }
+            if("/report/out_material_count".equals(url)) {
+                return "我的领用汇总";
+            }
+        }
+        return function.getName();
     }
 
     private boolean isOfficeHiddenFunction(Function function) {

@@ -21,7 +21,6 @@
     <div v-else :class="['top-nav-header-index', theme]">
       <div class="header-index-wide">
         <div class="header-index-left" :style="topMenuStyle.headerIndexLeft">
-          <logo class="top-nav-header" :show-title="device !== 'mobile'" :style="topMenuStyle.topNavHeader"/>
           <div v-if="device !== 'mobile'" :style="topMenuStyle.topSmenuStyle">
             <s-menu
               mode="horizontal"
@@ -45,7 +44,6 @@
   import JumpInfo from './JumpInfo'
   import UserMenu from '../tools/UserMenu'
   import SMenu from '../menu/'
-  import Logo from '../tools/Logo'
   import { getCurrentSystemConfig } from '@/api/api'
   import { mixin } from '@/utils/mixin.js'
 
@@ -54,8 +52,7 @@
     components: {
       JumpInfo,
       UserMenu,
-      SMenu,
-      Logo
+      SMenu
     },
     mixins: [mixin],
     props: {
@@ -152,8 +149,8 @@
             this.topMenuStyle.headerIndexLeft = {}
           } else {
             let rightWidth = '360px'
-            this.topMenuStyle.topNavHeader = { 'min-width': '165px' }
-            this.topMenuStyle.topSmenuStyle = { 'width': 'calc(100% - 165px)' }
+            this.topMenuStyle.topNavHeader = {}
+            this.topMenuStyle.topSmenuStyle = { 'width': '100%' }
             this.topMenuStyle.headerIndexRight = { 'min-width': rightWidth }
             this.topMenuStyle.headerIndexLeft = { 'width': `calc(100% - ${rightWidth})` }
           }

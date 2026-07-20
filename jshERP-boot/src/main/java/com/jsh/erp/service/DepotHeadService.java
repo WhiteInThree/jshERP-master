@@ -96,6 +96,20 @@ public class DepotHeadService {
         return result;
     }
 
+    public Map<String, Object> getDepartmentDashboard() throws Exception {
+        User user = userService.getCurrentUser();
+        String beginTime = Tools.firstDayOfMonth(Tools.getCurrentMonth()) + BusinessConstants.DAY_FIRST_TIME;
+        String endTime = Tools.getNow() + BusinessConstants.DAY_LAST_TIME;
+        DepartmentDashboardVo summary = depotHeadMapperEx.getDepartmentDashboardSummary(
+                user.getId(), beginTime, endTime);
+        Map<String, Object> result = new HashMap<>();
+        result.put("summary", summary == null ? new DepartmentDashboardVo() : summary);
+        result.put("recentApplications", depotHeadMapperEx.getDepartmentRecentApplications(user.getId(), 5));
+        result.put("topMaterials", depotHeadMapperEx.getDepartmentMonthTopMaterials(
+                user.getId(), beginTime, endTime, 5));
+        return result;
+    }
+
     public List<DepotHead> getDepotHead()throws Exception {
         DepotHeadExample example = new DepotHeadExample();
         example.createCriteria().andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);

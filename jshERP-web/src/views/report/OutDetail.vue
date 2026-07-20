@@ -232,6 +232,7 @@
         operNumberTotalStr: '0',
         allPriceTotalStr: '0',
         setTimeFlag: null,
+        roleCode: '',
         tabKey: "1",
         pageName: 'outDetail',
         // 默认索引
@@ -282,9 +283,26 @@
       this.loadCategoryTreeData()
       this.initColumnsSetting()
       this.migrateDepartmentColumnSetting()
+      this.loadCurrentRoleCode()
     },
     methods: {
       moment,
+      loadCurrentRoleCode() {
+        getAction('/user/getRoleTypeByCurrentUser').then((res) => {
+          if(res && res.code === 200) {
+            this.roleCode = res.data.roleCode || ''
+            if(this.roleCode === 'ROLE_DEPT') {
+              this.updateColumnTitle('operTime', '领用日期')
+            }
+          }
+        })
+      },
+      updateColumnTitle(dataIndex, title) {
+        const defaultColumn = this.defColumns.find(item => item.dataIndex === dataIndex)
+        const currentColumn = this.columns.find(item => item.dataIndex === dataIndex)
+        if(defaultColumn) defaultColumn.title = title
+        if(currentColumn) currentColumn.title = title
+      },
       migrateDepartmentColumnSetting() {
         const columnsStr = Vue.ls.get(this.pageName)
         if(columnsStr && columnsStr.indexOf(',') > -1) {
@@ -408,7 +426,8 @@
       },
       exportExcel() {
         let list = []
-        let head = '单据编号,部门,条码,名称,规格,型号,颜色,品牌,制造商,单位,多属性,数量,单价,金额,税率(%),税额,往来单位,仓库,出库日期,备注'
+        let dateTitle = this.roleCode === 'ROLE_DEPT' ? '领用日期' : '出库日期'
+        let head = '单据编号,部门,条码,名称,规格,型号,颜色,品牌,制造商,单位,多属性,数量,单价,金额,税率(%),税额,往来单位,仓库,' + dateTitle + ',备注'
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]

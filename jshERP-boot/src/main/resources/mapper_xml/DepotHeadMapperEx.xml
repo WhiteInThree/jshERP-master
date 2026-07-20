@@ -10,6 +10,62 @@
         for update
     </select>
 
+    <select id="getDepartmentDashboardSummary" resultType="com.jsh.erp.datasource.vo.DepartmentDashboardVo">
+        select
+        (select o.org_abr from jsh_orga_user_rel r
+            left join jsh_organization o on o.id=r.orga_id and ifnull(o.delete_flag,'0') !='1'
+            where r.user_id=#{creator} and ifnull(r.delete_flag,'0') !='1' limit 1) departmentName,
+        (select count(1) from jsh_depot_head apply_dh
+            where apply_dh.creator=#{creator} and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+            and apply_dh.status in ('0','9') and ifnull(apply_dh.delete_flag,'0') !='1') pendingApplyCount,
+        (select count(1) from jsh_depot_head apply_dh
+            where apply_dh.creator=#{creator} and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+            and apply_dh.status in ('1','2','3') and ifnull(apply_dh.delete_flag,'0') !='1') approvedPendingIssueCount,
+        (select ifnull(sum(issue_item.oper_number),0) from jsh_depot_head issue_dh
+            inner join jsh_depot_head apply_dh on apply_dh.number=issue_dh.link_number
+                and apply_dh.creator=#{creator} and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+                and ifnull(apply_dh.delete_flag,'0') !='1'
+            inner join jsh_depot_item issue_item on issue_item.header_id=issue_dh.id
+                and ifnull(issue_item.delete_flag,'0') !='1'
+            where issue_dh.type='出库' and issue_dh.sub_type='其它'
+                and issue_dh.oper_time &gt;=#{beginTime} and issue_dh.oper_time &lt;=#{endTime}
+                and ifnull(issue_dh.delete_flag,'0') !='1') monthReceivedCount,
+        (select count(1) from (
+            select mcs.material_id from jsh_material_current_stock mcs
+            inner join jsh_material m on m.id=mcs.material_id
+                and m.enabled=1 and ifnull(m.delete_flag,'0') !='1'
+            where ifnull(mcs.delete_flag,'0') !='1'
+            group by mcs.material_id having sum(ifnull(mcs.current_number,0)) &gt; 0
+        ) stock_material) currentStockMaterialCount
+    </select>
+
+    <select id="getDepartmentRecentApplications" resultType="com.jsh.erp.datasource.vo.DepotHeadVo4List">
+        select dh.id, dh.number, dh.status, date_format(dh.oper_time, '%m-%d') operTimeStr
+        from jsh_depot_head dh
+        where dh.creator=#{creator} and dh.type='其它' and dh.sub_type='请购单'
+            and ifnull(dh.delete_flag,'0') !='1'
+        order by dh.oper_time desc, dh.id desc
+        limit #{rows}
+    </select>
+
+    <select id="getDepartmentMonthTopMaterials" resultMap="ResultInOutMaterialCount">
+        select issue_item.material_id materialId, m.name mName,
+            issue_item.material_unit materialUnit, sum(issue_item.oper_number) numSum
+        from jsh_depot_head issue_dh
+        inner join jsh_depot_head apply_dh on apply_dh.number=issue_dh.link_number
+            and apply_dh.creator=#{creator} and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+            and ifnull(apply_dh.delete_flag,'0') !='1'
+        inner join jsh_depot_item issue_item on issue_item.header_id=issue_dh.id
+            and ifnull(issue_item.delete_flag,'0') !='1'
+        inner join jsh_material m on m.id=issue_item.material_id and ifnull(m.delete_flag,'0') !='1'
+        where issue_dh.type='出库' and issue_dh.sub_type='其它'
+            and issue_dh.oper_time &gt;=#{beginTime} and issue_dh.oper_time &lt;=#{endTime}
+            and ifnull(issue_dh.delete_flag,'0') !='1'
+        group by issue_item.material_id, m.name, issue_item.material_unit
+        order by numSum desc, issue_item.material_id desc
+        limit #{rows}
+    </select>
+
     <resultMap extends="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap" id="ResultMapEx" type="com.jsh.erp.datasource.vo.DepotHeadVo4List">
         <result column="depotHeadType" jdbcType="VARCHAR" property="depotHeadType" />
         <result column="OrganName" jdbcType="VARCHAR" property="organName" />

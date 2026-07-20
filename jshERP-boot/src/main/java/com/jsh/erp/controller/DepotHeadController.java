@@ -667,6 +667,21 @@ public class DepotHeadController extends BaseController {
         return res;
     }
 
+    @GetMapping(value = "/getDepartmentDashboard")
+    @ApiOperation(value = "获取部门首页统计")
+    public BaseResponseInfo getDepartmentDashboard(HttpServletRequest request) {
+        BaseResponseInfo res = new BaseResponseInfo();
+        try {
+            res.code = 200;
+            res.data = depotHeadService.getDepartmentDashboard();
+        } catch(Exception e) {
+            logger.error(e.getMessage(), e);
+            res.code = 500;
+            res.data = "获取部门首页数据失败";
+        }
+        return res;
+    }
+
     /**
      * 根据当前用户获取操作员数组，用于控制当前用户的数据权限，限制可以看到的单据范围
      * 注意：该接口提供给部分插件使用，勿删

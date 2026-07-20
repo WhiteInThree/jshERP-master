@@ -5,7 +5,6 @@
     :collapsible="collapsible"
     v-model="collapsed"
     :trigger="null">
-    <logo />
     <s-menu
       :collapsed="collapsed"
       :menu="menus"
@@ -20,13 +19,12 @@
 
 <script>
   import ALayoutSider from "ant-design-vue/es/layout/Sider"
-  import Logo from '../tools/Logo'
   import SMenu from './index'
   import { mixin, mixinDevice } from '@/utils/mixin.js'
 
   export default {
     name: "SideMenu",
-    components: { ALayoutSider, Logo, SMenu },
+    components: { ALayoutSider, SMenu },
     mixins: [mixin, mixinDevice],
     props: {
       mode: {
@@ -58,7 +56,7 @@
       smenuStyle() {
         let style = { 'padding': '0' }
         if (this.fixSiderbar) {
-          style['height'] = 'calc(100% - 59px)'
+          style['height'] = '100%'
           style['overflow'] = 'auto'
           style['overflow-x'] = 'hidden'
         }

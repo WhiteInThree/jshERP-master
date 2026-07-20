@@ -17,6 +17,21 @@ import java.util.List;
 public interface DepotHeadMapperEx {
     DepotHead getDepotHeadForUpdate(@Param("number") String number);
 
+    DepartmentDashboardVo getDepartmentDashboardSummary(
+            @Param("creator") Long creator,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime);
+
+    List<DepotHeadVo4List> getDepartmentRecentApplications(
+            @Param("creator") Long creator,
+            @Param("rows") Integer rows);
+
+    List<DepotHeadVo4InOutMCount> getDepartmentMonthTopMaterials(
+            @Param("creator") Long creator,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("rows") Integer rows);
+
     List<DepotHeadVo4List> selectByConditionDepotHead(
             @Param("type") String type,
             @Param("subType") String subType,
