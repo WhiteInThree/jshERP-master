@@ -77,6 +77,9 @@ public class ExceptionConstants {
     //当前部门已经存在经理
     public static final int USER_LEADER_IS_EXIST_CODE = 500009;
     public static final String USER_LEADER_IS_EXIST_MSG = "抱歉，当前部门已经存在经理";
+    //办公室不能操作管理员账号
+    public static final int USER_ADMIN_OPERATION_FORBIDDEN_CODE = 500014;
+    public static final String USER_ADMIN_OPERATION_FORBIDDEN_MSG = "办公室账号不能操作管理员账号";
     //验证码错误
     public static final int USER_JCAPTCHA_ERROR_CODE = 500010;
     public static final String USER_JCAPTCHA_ERROR_MSG = "验证码错误";
@@ -103,6 +106,15 @@ public class ExceptionConstants {
     //修改角色信息失败
     public static final int ROLE_EDIT_FAILED_CODE = 1000002;
     public static final String ROLE_EDIT_FAILED_MSG = "修改角色信息失败";
+    //无权设置角色编码
+    public static final int ROLE_CODE_OPERATION_FORBIDDEN_CODE = 1000003;
+    public static final String ROLE_CODE_OPERATION_FORBIDDEN_MSG = "只有管理员和办公室可以设置角色编码";
+    //办公室不允许操作管理员角色
+    public static final int ROLE_ADMIN_OPERATION_FORBIDDEN_CODE = 1000004;
+    public static final String ROLE_ADMIN_OPERATION_FORBIDDEN_MSG = "办公室不能设置或操作管理员角色";
+    //角色编码不合法
+    public static final int ROLE_CODE_INVALID_CODE = 1000005;
+    public static final String ROLE_CODE_INVALID_MSG = "角色编码不合法";
     /**
      * 应用信息
      * type = 15

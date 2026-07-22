@@ -25,6 +25,14 @@
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="角色名称">
             <a-input placeholder="请输入角色名称" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
+          <a-form-item v-if="canSetRoleCode" :labelCol="labelCol" :wrapperCol="wrapperCol" label="角色编码">
+            <a-select placeholder="请选择角色编码" allow-clear v-decorator="[ 'value' ]">
+              <a-select-option v-if="currentRoleCode === 'ROLE_ADMIN'" value="ROLE_ADMIN">管理员（ROLE_ADMIN）</a-select-option>
+              <a-select-option value="ROLE_OFFICE">办公室（ROLE_OFFICE）</a-select-option>
+              <a-select-option value="ROLE_DEPT">部门（ROLE_DEPT）</a-select-option>
+            </a-select>
+            <div class="role-code-tip">普通角色可以不选择编码；办公室不能设置管理员编码。</div>
+          </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="数据类型">
             <a-select placeholder="请选择数据类型" v-decorator="[ 'type', validatorRules.type]" style="width:94%">
               <a-select-option value="全部数据">全部数据</a-select-option>
@@ -59,6 +67,7 @@
   import {addRole,editRole,checkRole } from '@/api/api'
   import {autoJumpNextInput} from "@/utils/util"
   import {mixinDevice} from '@/utils/mixin'
+  import {getAction} from '@/api/manage'
   export default {
     name: "RoleModal",
     mixins: [mixinDevice],
@@ -71,6 +80,7 @@
         visible: false,
         model: {},
         isReadOnly: false,
+        currentRoleCode: '',
         labelCol: {
           xs: { span: 24 },
           sm: { span: 5 },
@@ -115,8 +125,21 @@
       }
     },
     created () {
+      this.loadCurrentRoleCode()
+    },
+    computed: {
+      canSetRoleCode() {
+        return this.currentRoleCode === 'ROLE_ADMIN' || this.currentRoleCode === 'ROLE_OFFICE'
+      }
     },
     methods: {
+      loadCurrentRoleCode() {
+        getAction('/user/getRoleTypeByCurrentUser').then((res) => {
+          if(res && res.code === 200) {
+            this.currentRoleCode = res.data.roleCode || ''
+          }
+        })
+      },
       add () {
         this.edit({});
       },
@@ -126,7 +149,7 @@
         this.priceLimitList.value = this.model.priceLimit
         this.visible = true;
         this.$nextTick(() => {
-          this.form.setFieldsValue(pick(this.model,'name', 'type', 'sort', 'description'))
+          this.form.setFieldsValue(pick(this.model,'name', 'value', 'type', 'sort', 'description'))
           autoJumpNextInput('roleModal')
         });
       },
@@ -141,6 +164,11 @@
           if (!err) {
             that.confirmLoading = true;
             let formData = Object.assign(this.model, values);
+            if(that.canSetRoleCode) {
+              formData.value = values.value || ''
+            } else {
+              delete formData.value
+            }
             formData.priceLimit = this.priceLimitList.value
             let obj;
             if(!this.model.id){
@@ -185,5 +213,8 @@
   }
 </script>
 <style scoped>
-
+  .role-code-tip {
+    color: #999;
+    line-height: 20px;
+  }
 </style>

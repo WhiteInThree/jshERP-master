@@ -2,12 +2,14 @@ package com.jsh.erp.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.Role;
 import com.jsh.erp.datasource.entities.RoleEx;
 import com.jsh.erp.datasource.entities.RoleExample;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.RoleMapper;
 import com.jsh.erp.datasource.mappers.RoleMapperEx;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.PageUtils;
 import com.jsh.erp.utils.StringUtil;
@@ -24,6 +26,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class RoleService {
@@ -121,6 +124,7 @@ public class RoleService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertRole(JSONObject obj, HttpServletRequest request)throws Exception {
         Role role = JSONObject.parseObject(obj.toJSONString(), Role.class);
+        validateRoleCodeChange(null, role.getValue(), obj.containsKey("value"));
         int result=0;
         try{
             role.setEnabled(true);
@@ -136,6 +140,8 @@ public class RoleService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateRole(JSONObject obj, HttpServletRequest request) throws Exception{
         Role role = JSONObject.parseObject(obj.toJSONString(), Role.class);
+        Role oldRole = role.getId() == null ? null : getRole(role.getId());
+        validateRoleCodeChange(oldRole, role.getValue(), obj.containsKey("value"));
         int result=0;
         try{
             result=roleMapper.updateByPrimaryKeySelective(role);
@@ -194,6 +200,7 @@ public class RoleService {
         sb.append(BusinessConstants.LOG_OPERATION_TYPE_DELETE);
         List<Role> list = getRoleListByIds(ids);
         for(Role role: list){
+            checkOfficeCannotOperateAdminRole(role);
             sb.append("[").append(role.getName()).append("]");
         }
         logService.insertLog("角色", sb.toString(),
@@ -219,6 +226,10 @@ public class RoleService {
                 new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_ENABLED).toString(),
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
         List<Long> roleIds = StringUtil.strToLongList(ids);
+        List<Role> roles = getRoleListByIds(ids);
+        for(Role item : roles) {
+            checkOfficeCannotOperateAdminRole(item);
+        }
         Role role = new Role();
         role.setEnabled(status);
         RoleExample example = new RoleExample();
@@ -230,6 +241,56 @@ public class RoleService {
             JshException.writeFail(logger, e);
         }
         return result;
+    }
+
+    private void validateRoleCodeChange(Role oldRole, String newRoleCode, boolean containsRoleCode) throws Exception {
+        Role operatorRole = getCurrentOperatorRole();
+        String operatorRoleCode = operatorRole == null ? null : operatorRole.getValue();
+        boolean isAdmin = BusinessConstants.ROLE_CODE_ADMIN.equals(operatorRoleCode);
+        boolean isOffice = BusinessConstants.ROLE_CODE_OFFICE.equals(operatorRoleCode);
+
+        if(isOffice && oldRole != null
+                && BusinessConstants.ROLE_CODE_ADMIN.equals(oldRole.getValue())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADMIN_OPERATION_FORBIDDEN_CODE,
+                    ExceptionConstants.ROLE_ADMIN_OPERATION_FORBIDDEN_MSG);
+        }
+        if(!containsRoleCode) {
+            return;
+        }
+
+        String normalizedRoleCode = StringUtil.isEmpty(newRoleCode) ? null : newRoleCode.trim();
+        String oldRoleCode = oldRole == null || StringUtil.isEmpty(oldRole.getValue())
+                ? null : oldRole.getValue().trim();
+        if(!Objects.equals(oldRoleCode, normalizedRoleCode) && !isAdmin && !isOffice) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_CODE_OPERATION_FORBIDDEN_CODE,
+                    ExceptionConstants.ROLE_CODE_OPERATION_FORBIDDEN_MSG);
+        }
+        if(normalizedRoleCode != null
+                && !BusinessConstants.ROLE_CODE_ADMIN.equals(normalizedRoleCode)
+                && !BusinessConstants.ROLE_CODE_OFFICE.equals(normalizedRoleCode)
+                && !BusinessConstants.ROLE_CODE_DEPT.equals(normalizedRoleCode)) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_CODE_INVALID_CODE,
+                    ExceptionConstants.ROLE_CODE_INVALID_MSG);
+        }
+        if(isOffice && BusinessConstants.ROLE_CODE_ADMIN.equals(normalizedRoleCode)) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADMIN_OPERATION_FORBIDDEN_CODE,
+                    ExceptionConstants.ROLE_ADMIN_OPERATION_FORBIDDEN_MSG);
+        }
+    }
+
+    private void checkOfficeCannotOperateAdminRole(Role targetRole) throws Exception {
+        Role operatorRole = getCurrentOperatorRole();
+        if(operatorRole != null && BusinessConstants.ROLE_CODE_OFFICE.equals(operatorRole.getValue())
+                && targetRole != null && BusinessConstants.ROLE_CODE_ADMIN.equals(targetRole.getValue())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADMIN_OPERATION_FORBIDDEN_CODE,
+                    ExceptionConstants.ROLE_ADMIN_OPERATION_FORBIDDEN_MSG);
+        }
+    }
+
+    private Role getCurrentOperatorRole() throws Exception {
+        User operator = userService.getCurrentUser();
+        return operator == null || operator.getId() == null
+                ? null : userService.getRoleTypeByUserId(operator.getId());
     }
 
     /**

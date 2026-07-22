@@ -61,6 +61,7 @@ public class UserBusinessService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertUserBusiness(JSONObject obj, HttpServletRequest request) throws Exception {
         UserBusiness userBusiness = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
+        checkOfficeUserRoleOperation(userBusiness);
         int result=0;
         try{
             String value = userBusiness.getValue();
@@ -78,6 +79,7 @@ public class UserBusinessService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateUserBusiness(JSONObject obj, HttpServletRequest request) throws Exception {
         UserBusiness userBusiness = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
+        checkOfficeUserRoleOperation(userBusiness);
         int result=0;
         try{
             String value = userBusiness.getValue();
@@ -109,6 +111,12 @@ public class UserBusinessService {
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
         User userInfo=userService.getCurrentUser();
         String [] idArray=ids.split(",");
+        for(String id : idArray) {
+            UserBusiness item = getUserBusiness(Long.parseLong(id));
+            if(item != null && "UserRole".equals(item.getType())) {
+                userService.checkOfficeCannotOperateAdmin(Long.parseLong(item.getKeyId()));
+            }
+        }
         int result=0;
         try{
             result=  userBusinessMapperEx.batchDeleteUserBusinessByIds(new Date(),userInfo==null?null:userInfo.getId(),idArray);
@@ -116,6 +124,22 @@ public class UserBusinessService {
             JshException.writeFail(logger, e);
         }
         return result;
+    }
+
+    private void checkOfficeUserRoleOperation(UserBusiness userBusiness) throws Exception {
+        if(userBusiness != null && "UserRole".equals(userBusiness.getType())
+                && userBusiness.getKeyId() != null) {
+            userService.checkOfficeCannotOperateAdmin(Long.parseLong(userBusiness.getKeyId()));
+            String value = userBusiness.getValue();
+            if(value != null) {
+                String roleIds = value.replace("][", ",").replace("[", "").replace("]", "");
+                for(String roleId : roleIds.split(",")) {
+                    if(!roleId.trim().isEmpty()) {
+                        userService.checkOfficeCannotAssignAdminRole(Long.parseLong(roleId.trim()));
+                    }
+                }
+            }
+        }
     }
 
     public int checkIsNameExist(Long id, String name)throws Exception {

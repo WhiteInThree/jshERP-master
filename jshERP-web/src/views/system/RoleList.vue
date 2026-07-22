@@ -151,6 +151,9 @@
             title: '角色名称', align:"left", dataIndex: 'name', width: 120
           },
           {
+            title: '角色编码', align:"left", dataIndex: 'value', width: 150
+          },
+          {
             align:"left", dataIndex: 'type', width: 100,
             slots: { title: 'typeTitle' }
           },

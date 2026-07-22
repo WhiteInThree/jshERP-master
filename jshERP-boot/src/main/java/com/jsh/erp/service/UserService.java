@@ -176,6 +176,7 @@ public class UserService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateUser(JSONObject obj, HttpServletRequest request) throws Exception{
         User user = JSONObject.parseObject(obj.toJSONString(), User.class);
+        checkOfficeCannotOperateAdmin(user.getId());
         int result=0;
         try{
             //判断是否登录过
@@ -193,6 +194,7 @@ public class UserService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateUserByObj(User user, HttpServletRequest request) throws Exception{
+        checkOfficeCannotOperateAdmin(user.getId());
         int result=0;
         try{
             //判断是否登录过
@@ -213,6 +215,7 @@ public class UserService {
     public int resetPwd(String md5Pwd, Long id, HttpServletRequest request) throws Exception{
         int result=0;
         User u = getUser(id);
+        checkOfficeCannotOperateAdmin(id);
         String loginName = u.getLoginName();
         if("admin".equals(loginName)){
             logger.info("禁止重置超管密码");
@@ -253,6 +256,7 @@ public class UserService {
         sb.append(BusinessConstants.LOG_OPERATION_TYPE_DELETE);
         List<User> list = getUserListByIds(ids);
         for(User user: list){
+            checkOfficeCannotOperateAdmin(user.getId());
             if(user.getId().equals(user.getTenantId())) {
                 logger.error("异常码[{}],异常提示[{}],参数,ids:[{}]",
                         ExceptionConstants.USER_LIMIT_TENANT_DELETE_CODE,ExceptionConstants.USER_LIMIT_TENANT_DELETE_MSG,ids);
@@ -531,6 +535,7 @@ public class UserService {
             throw new BusinessRunTimeException(ExceptionConstants.USER_NAME_LIMIT_USE_CODE,
                     ExceptionConstants.USER_NAME_LIMIT_USE_MSG);
         } else {
+            checkOfficeCannotAssignAdminRole(ue.getRoleId());
             logService.insertLog("用户",
                     BusinessConstants.LOG_OPERATION_TYPE_ADD,
                     ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
@@ -677,6 +682,8 @@ public class UserService {
             throw new BusinessRunTimeException(ExceptionConstants.USER_NAME_LIMIT_USE_CODE,
                     ExceptionConstants.USER_NAME_LIMIT_USE_MSG);
         } else {
+            checkOfficeCannotOperateAdmin(ue.getId());
+            checkOfficeCannotAssignAdminRole(ue.getRoleId());
             logService.insertLog("用户",
                     new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(ue.getId()).toString(),
                     ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
@@ -955,6 +962,7 @@ public class UserService {
         StringBuilder userStr = new StringBuilder();
         List<Long> idList = new ArrayList<>();
         for(User user: list) {
+            checkOfficeCannotOperateAdmin(user.getId());
             if(user.getId().equals(user.getTenantId())) {
                 //租户不能进行禁用
             } else {
@@ -981,6 +989,53 @@ public class UserService {
             result = 1;
         }
         return result;
+    }
+
+    public void checkOfficeCannotOperateAdmin(Long targetUserId) throws Exception {
+        if(targetUserId == null) {
+            return;
+        }
+        User operator = getCurrentUserForPermissionCheck();
+        if(operator == null) {
+            return;
+        }
+        Role operatorRole = getRoleTypeByUserId(operator.getId());
+        if(operatorRole == null || !BusinessConstants.ROLE_CODE_OFFICE.equals(operatorRole.getValue())) {
+            return;
+        }
+        User target = getUser(targetUserId);
+        if(target != null) {
+            Role targetRole = getRoleTypeByUserId(targetUserId);
+            if(targetRole != null && BusinessConstants.ROLE_CODE_ADMIN.equals(targetRole.getValue())) {
+                throw new BusinessRunTimeException(ExceptionConstants.USER_ADMIN_OPERATION_FORBIDDEN_CODE,
+                        ExceptionConstants.USER_ADMIN_OPERATION_FORBIDDEN_MSG);
+            }
+        }
+    }
+
+    public void checkOfficeCannotAssignAdminRole(Long roleId) throws Exception {
+        if(roleId == null) {
+            return;
+        }
+        User operator = getCurrentUserForPermissionCheck();
+        if(operator == null) {
+            return;
+        }
+        Role operatorRole = getRoleTypeByUserId(operator.getId());
+        Role targetRole = roleService.getRoleWithoutTenant(roleId);
+        if(operatorRole != null && BusinessConstants.ROLE_CODE_OFFICE.equals(operatorRole.getValue())
+                && targetRole != null && BusinessConstants.ROLE_CODE_ADMIN.equals(targetRole.getValue())) {
+            throw new BusinessRunTimeException(ExceptionConstants.USER_ADMIN_OPERATION_FORBIDDEN_CODE,
+                    ExceptionConstants.USER_ADMIN_OPERATION_FORBIDDEN_MSG);
+        }
+    }
+
+    private User getCurrentUserForPermissionCheck() {
+        try {
+            return getCurrentUser();
+        } catch(Exception e) {
+            return null;
+        }
     }
 
     public User getUserByWeixinCode(String weixinCode) throws Exception {

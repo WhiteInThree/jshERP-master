@@ -283,6 +283,10 @@ public class FunctionController extends BaseController {
         JSONArray arr = new JSONArray();
         try {
             User userInfo = userService.getCurrentUser();
+            Role currentRole = userService.getRoleTypeByUserId(userInfo.getId());
+            String currentRoleCode = currentRole == null ? "" : currentRole.getValue();
+            boolean canAssignSystemMenu = BusinessConstants.ROLE_CODE_ADMIN.equals(currentRoleCode)
+                    || BusinessConstants.ROLE_CODE_OFFICE.equals(currentRoleCode);
             //获取当前用户所拥有的功能id列表
             List<Long> funIdList = functionService.getCurrentUserFunIdList();
             if("admin".equals(userInfo.getLoginName())) {
@@ -299,17 +303,12 @@ public class FunctionController extends BaseController {
             //存放数据json数组
             JSONArray dataArray = new JSONArray();
             if (null != dataListFun) {
-                //根据条件从列表里面移除"系统管理"
+                //管理员和办公室可以向下级角色分配系统管理，普通租户角色继续隐藏
                 List<Function> dataList = new ArrayList<>();
+                String token = request.getHeader("X-Access-Token");
+                Long tenantId = Tools.getTenantIdByToken(token);
                 for (Function fun : dataListFun) {
-                    String token = request.getHeader("X-Access-Token");
-                    Long tenantId = Tools.getTenantIdByToken(token);
-                    if (tenantId!=0L) {
-                        if(!("系统管理").equals(fun.getName())) {
-                            dataList.add(fun);
-                        }
-                    } else {
-                        //超管
+                    if (tenantId == 0L || canAssignSystemMenu || !("系统管理").equals(fun.getName())) {
                         dataList.add(fun);
                     }
                 }
