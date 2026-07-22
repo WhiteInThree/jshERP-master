@@ -946,6 +946,24 @@
         </if>
     </select>
 
+    <select id="getOfficeDashboardStockWarnings" resultMap="ResultStockWarningCount">
+        select m.id MId, m.name MName, d.name depotName,
+            concat_ws('', m.unit, u.basic_unit) MaterialUnit,
+            mcs.current_number, mis.low_safe_stock
+        from jsh_material m
+        left join jsh_material_extend me on me.material_id=m.id and ifnull(me.delete_flag,'0') !='1'
+        inner join jsh_material_initial_stock mis on mis.material_id=m.id and ifnull(mis.delete_flag,'0') !='1'
+        inner join jsh_material_current_stock mcs on mcs.material_id=m.id and mcs.depot_id=mis.depot_id
+            and ifnull(mcs.delete_flag,'0') !='1'
+        left join jsh_unit u on m.unit_id=u.id and ifnull(u.delete_flag,'0') !='1'
+        left join jsh_depot d on d.id=mis.depot_id and ifnull(d.delete_flag,'0') !='1'
+        where me.default_flag=1 and m.enabled=1 and ifnull(m.delete_flag,'0') !='1'
+            and ifnull(mis.low_safe_stock,0) != 0
+            and mcs.current_number &lt; mis.low_safe_stock
+        order by (mis.low_safe_stock-mcs.current_number) desc, m.id desc
+        limit #{rows}
+    </select>
+
     <select id="findStockWarningCountTotal" resultType="java.lang.Integer">
         select count(1) from
         (select m.id

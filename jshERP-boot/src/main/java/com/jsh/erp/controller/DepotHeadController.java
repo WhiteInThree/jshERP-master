@@ -8,6 +8,8 @@ import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.DepotHead;
 import com.jsh.erp.datasource.entities.DepotHeadVo4Body;
+import com.jsh.erp.datasource.entities.Role;
+import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.vo.DepotHeadVo4InDetail;
 import com.jsh.erp.datasource.vo.DepotHeadVo4InOutMCount;
 import com.jsh.erp.datasource.vo.DepotHeadVo4List;
@@ -678,6 +680,30 @@ public class DepotHeadController extends BaseController {
             logger.error(e.getMessage(), e);
             res.code = 500;
             res.data = "获取部门首页数据失败";
+        }
+        return res;
+    }
+
+    @GetMapping(value = "/getOfficeDashboard")
+    @ApiOperation(value = "获取办公室首页统计")
+    public BaseResponseInfo getOfficeDashboard(HttpServletRequest request) {
+        BaseResponseInfo res = new BaseResponseInfo();
+        try {
+            User user = userService.getCurrentUser();
+            Role role = userService.getRoleTypeByUserId(user.getId());
+            String roleCode = role == null ? "" : role.getValue();
+            if(!BusinessConstants.ROLE_CODE_OFFICE.equals(roleCode)
+                    && !BusinessConstants.ROLE_CODE_ADMIN.equals(roleCode)) {
+                res.code = 403;
+                res.data = "无权访问办公室首页数据";
+                return res;
+            }
+            res.code = 200;
+            res.data = depotHeadService.getOfficeDashboard();
+        } catch(Exception e) {
+            logger.error(e.getMessage(), e);
+            res.code = 500;
+            res.data = "获取办公室首页数据失败";
         }
         return res;
     }

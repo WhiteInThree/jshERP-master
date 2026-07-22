@@ -2,7 +2,6 @@
   <div class="department-dashboard">
     <section class="dashboard-hero">
       <div>
-        <div class="eyebrow">OFFICE SUPPLY CENTER</div>
         <h1>{{ summary.departmentName || '部门' }}领用工作台</h1>
         <p>申请进度、领用记录和库存情况，一页掌握。</p>
       </div>
@@ -14,7 +13,7 @@
 
     <a-spin :spinning="loading">
       <section class="metric-grid">
-        <article v-for="(metric, index) in metrics" :key="metric.key" class="metric-card" :class="'tone-' + metric.tone" :style="{ animationDelay: (index * 70) + 'ms' }">
+        <article v-for="metric in metrics" :key="metric.key" class="metric-card" :class="'tone-' + metric.tone">
           <div class="metric-icon"><a-icon :type="metric.icon" /></div>
           <div class="metric-copy">
             <span>{{ metric.label }}</span>
@@ -163,54 +162,41 @@
 <style scoped>
   .department-dashboard {
     min-height: calc(100vh - 110px);
-    padding: 24px;
-    color: #18332f;
-    background:
-      radial-gradient(circle at 92% 8%, rgba(236, 173, 98, .22), transparent 24%),
-      radial-gradient(circle at 5% 82%, rgba(44, 122, 111, .12), transparent 28%),
-      #f4f0e7;
-    border-radius: 18px 18px 0 0;
+    color: #333;
   }
 
   .dashboard-hero {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    margin-bottom: 24px;
-    padding: 8px 4px;
-  }
-
-  .eyebrow {
-    margin-bottom: 8px;
-    color: #c9664d;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
+    margin-bottom: 16px;
+    padding: 18px 20px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
   }
 
   .dashboard-hero h1 {
     margin: 0;
-    color: #173b35;
+    color: #262626;
     font-family: "Microsoft YaHei", sans-serif;
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -1px;
+    font-size: 22px;
+    font-weight: 600;
   }
 
   .dashboard-hero p {
     margin: 8px 0 0;
-    color: #6c7d78;
+    color: #8c8c8c;
     font-size: 14px;
   }
 
   .hero-date {
-    min-width: 90px;
-    padding: 12px 18px;
-    color: #f9f6ef;
+    min-width: 80px;
+    padding: 8px 14px;
+    color: #1890ff;
     text-align: center;
-    background: #173b35;
-    border-radius: 16px 16px 4px 16px;
-    box-shadow: 0 12px 28px rgba(23, 59, 53, .16);
+    background: #e6f7ff;
+    border-radius: 4px;
   }
 
   .hero-date span,
@@ -219,46 +205,31 @@
   }
 
   .hero-date span {
-    font-size: 22px;
-    font-weight: 800;
+    font-size: 18px;
+    font-weight: 600;
   }
 
   .hero-date small {
     margin-top: 2px;
-    color: #bcd0c9;
+    color: #69c0ff;
     font-size: 11px;
   }
 
   .metric-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-    margin-bottom: 18px;
+    gap: 12px;
+    margin-bottom: 16px;
   }
 
   .metric-card {
     position: relative;
     display: flex;
-    min-height: 148px;
-    padding: 22px;
-    overflow: hidden;
-    background: rgba(255, 253, 248, .9);
-    border: 1px solid rgba(31, 74, 66, .08);
-    border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(61, 69, 60, .07);
-    animation: rise-in .45s ease both;
-  }
-
-  .metric-card::after {
-    content: '';
-    position: absolute;
-    right: -28px;
-    bottom: -38px;
-    width: 105px;
-    height: 105px;
-    border-radius: 50%;
-    background: currentColor;
-    opacity: .07;
+    min-height: 124px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
   }
 
   .metric-icon {
@@ -270,7 +241,7 @@
     margin-right: 16px;
     color: #fff;
     font-size: 19px;
-    border-radius: 12px;
+    border-radius: 4px;
     background: currentColor;
   }
 
@@ -284,7 +255,7 @@
   }
 
   .metric-copy span {
-    color: #63736f;
+    color: #8c8c8c;
     font-size: 13px;
     font-weight: 600;
   }
@@ -292,34 +263,33 @@
   .metric-copy strong {
     display: block;
     margin: 5px 0 2px;
-    color: #173b35;
-    font-size: 34px;
+    color: #262626;
+    font-size: 30px;
     line-height: 1.15;
   }
 
   .metric-copy small {
-    color: #99a49f;
+    color: #bfbfbf;
     font-size: 11px;
   }
 
-  .tone-coral { color: #c9664d; }
-  .tone-amber { color: #d29438; }
-  .tone-teal { color: #2f8074; }
-  .tone-navy { color: #31546c; }
+  .tone-coral { color: #ff7875; }
+  .tone-amber { color: #faad14; }
+  .tone-teal { color: #52c41a; }
+  .tone-navy { color: #1890ff; }
 
   .content-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.45fr) minmax(340px, .85fr);
-    gap: 18px;
+    gap: 12px;
   }
 
   .panel {
     min-height: 360px;
-    padding: 24px;
-    background: rgba(255, 253, 248, .94);
-    border: 1px solid rgba(31, 74, 66, .08);
-    border-radius: 20px;
-    box-shadow: 0 14px 34px rgba(61, 69, 60, .07);
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
   }
 
   .panel-header {
@@ -336,20 +306,20 @@
 
   .section-index {
     margin-right: 10px;
-    color: #cf6f55;
+    color: #1890ff;
     font-size: 12px;
     font-weight: 800;
   }
 
   .panel-header h2 {
     margin: 0;
-    color: #173b35;
+    color: #262626;
     font-size: 18px;
     font-weight: 750;
   }
 
   .panel-note {
-    color: #97a39f;
+    color: #bfbfbf;
     font-size: 11px;
   }
 
@@ -363,7 +333,7 @@
 
   .application-head {
     padding: 10px 16px;
-    color: #93a09b;
+    color: #8c8c8c;
     font-size: 11px;
     border-bottom: 1px solid #e9e5db;
   }
@@ -371,7 +341,7 @@
   .application-row {
     min-height: 52px;
     padding: 8px 16px;
-    color: #5c6d68;
+    color: #595959;
     font-size: 13px;
     border-bottom: 1px dashed #e9e5db;
   }
@@ -381,7 +351,7 @@
   }
 
   .application-number {
-    color: #244f47;
+    color: #1890ff;
     font-weight: 700;
   }
 
@@ -406,7 +376,7 @@
   }
 
   .rank {
-    color: #bdc5c1;
+    color: #bfbfbf;
     font-size: 12px;
     font-weight: 800;
   }
@@ -414,7 +384,7 @@
   .top-name strong {
     display: block;
     margin-bottom: 7px;
-    color: #35504b;
+    color: #595959;
     font-size: 13px;
   }
 
@@ -423,32 +393,27 @@
     width: 100%;
     height: 4px;
     overflow: hidden;
-    background: #ece8de;
+    background: #f0f0f0;
     border-radius: 4px;
   }
 
   .top-name i {
     display: block;
     height: 100%;
-    background: linear-gradient(90deg, #377f73, #e0a654);
+    background: #1890ff;
     border-radius: 4px;
   }
 
   .top-row b {
-    color: #173b35;
+    color: #262626;
     font-size: 16px;
   }
 
   .top-row b small {
     margin-left: 3px;
-    color: #899792;
+    color: #8c8c8c;
     font-size: 11px;
     font-weight: 500;
-  }
-
-  @keyframes rise-in {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
   }
 
   @media (max-width: 1100px) {
@@ -457,7 +422,7 @@
   }
 
   @media (max-width: 600px) {
-    .department-dashboard { padding: 16px; border-radius: 12px 12px 0 0; }
+    .department-dashboard { min-height: auto; }
     .dashboard-hero { align-items: flex-start; }
     .dashboard-hero h1 { font-size: 24px; }
     .hero-date { min-width: 72px; padding: 10px 12px; }

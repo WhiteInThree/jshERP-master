@@ -202,6 +202,8 @@ public interface DepotItemMapperEx {
             @Param("depotList") List<Long> depotList,
             @Param("categoryList") List<Long> categoryList);
 
+    List<DepotItemStockWarningCount> getOfficeDashboardStockWarnings(@Param("rows") Integer rows);
+
     int findStockWarningCountTotal(
             @Param("materialParam") String materialParam,
             @Param("depotList") List<Long> depotList,

@@ -32,6 +32,14 @@ public interface DepotHeadMapperEx {
             @Param("endTime") String endTime,
             @Param("rows") Integer rows);
 
+    OfficeDashboardVo getOfficeDashboardSummary(
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime);
+
+    List<OfficeDepartmentRankingVo> getOfficeDepartmentRanking(
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime);
+
     List<DepotHeadVo4List> selectByConditionDepotHead(
             @Param("type") String type,
             @Param("subType") String subType,

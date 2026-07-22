@@ -1,6 +1,6 @@
 <template>
   <div class="logo">
-    <h1 v-if="showTitle">{{ title }}</h1>
+    <a-icon type="inbox" class="logo-mark" />
   </div>
 </template>
 
@@ -37,15 +37,10 @@
       box-shadow: none !important;
       transition: background 300ms;
       background: #002140;
-      h1 {
-        font-size: 24px;
-        color: #ffffff;
-      }
-      a {
-        color: white;
-        &:hover {
-          color: rgba(255, 255, 255, 0.8);
-        }
+      text-align: center;
+      .logo-mark {
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 21px;
       }
 
     }

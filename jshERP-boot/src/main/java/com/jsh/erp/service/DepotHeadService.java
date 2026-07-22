@@ -110,6 +110,17 @@ public class DepotHeadService {
         return result;
     }
 
+    public Map<String, Object> getOfficeDashboard() throws Exception {
+        String beginTime = Tools.firstDayOfMonth(Tools.getCurrentMonth()) + BusinessConstants.DAY_FIRST_TIME;
+        String endTime = Tools.getNow() + BusinessConstants.DAY_LAST_TIME;
+        OfficeDashboardVo summary = depotHeadMapperEx.getOfficeDashboardSummary(beginTime, endTime);
+        Map<String, Object> result = new HashMap<>();
+        result.put("summary", summary == null ? new OfficeDashboardVo() : summary);
+        result.put("stockWarnings", depotItemMapperEx.getOfficeDashboardStockWarnings(5));
+        result.put("departmentRanking", depotHeadMapperEx.getOfficeDepartmentRanking(beginTime, endTime));
+        return result;
+    }
+
     public List<DepotHead> getDepotHead()throws Exception {
         DepotHeadExample example = new DepotHeadExample();
         example.createCriteria().andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);

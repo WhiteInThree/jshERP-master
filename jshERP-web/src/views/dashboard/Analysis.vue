@@ -4,6 +4,7 @@
       <a-spin tip="正在加载首页..." />
     </div>
     <department-dashboard v-else-if="roleCode === 'ROLE_DEPT'" />
+    <office-dashboard v-else-if="roleCode === 'ROLE_OFFICE'" />
     <index-chart v-else />
   </div>
 </template>
@@ -11,13 +12,15 @@
 <script>
   import IndexChart from './IndexChart'
   import DepartmentDashboard from './DepartmentDashboard'
+  import OfficeDashboard from './OfficeDashboard'
   import { getAction } from '@/api/manage'
 
   export default {
     name: "Analysis",
     components: {
       IndexChart,
-      DepartmentDashboard
+      DepartmentDashboard,
+      OfficeDashboard
     },
     data() {
       return {

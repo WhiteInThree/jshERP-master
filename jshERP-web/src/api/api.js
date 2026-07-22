@@ -4,6 +4,7 @@ import { getAction, deleteAction, putAction, postAction, httpAction } from '@/ap
 const getBuyAndSaleStatistics = (params)=>getAction("/depotHead/getBuyAndSaleStatistics",params);
 const buyOrSalePrice = (params)=>getAction("/depotItem/buyOrSalePrice",params);
 const getDepartmentDashboard = (params)=>getAction("/depotHead/getDepartmentDashboard",params);
+const getOfficeDashboard = (params)=>getAction("/depotHead/getOfficeDashboard",params);
 //租户管理
 const checkTenant = (params)=>getAction("/tenant/checkIsNameExist",params);
 const addTenant = (params)=>postAction("/tenant/add",params);
@@ -127,6 +128,7 @@ const findFinancialDetailByNumber = (params)=>getAction("/accountHead/getDetailB
 export {
   getBuyAndSaleStatistics,
   getDepartmentDashboard,
+  getOfficeDashboard,
   buyOrSalePrice,
   checkTenant,
   addTenant,

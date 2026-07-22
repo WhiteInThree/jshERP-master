@@ -66,6 +66,64 @@
         limit #{rows}
     </select>
 
+    <select id="getOfficeDashboardSummary" resultType="com.jsh.erp.datasource.vo.OfficeDashboardVo">
+        select
+        (select count(1) from jsh_depot_head apply_dh
+            where apply_dh.type='其它' and apply_dh.sub_type='请购单'
+            and apply_dh.status in ('0','9') and ifnull(apply_dh.delete_flag,'0') !='1') pendingApplyCount,
+        (select count(1) from jsh_depot_head apply_dh
+            where apply_dh.type='其它' and apply_dh.sub_type='请购单'
+            and apply_dh.status in ('1','2','3') and ifnull(apply_dh.delete_flag,'0') !='1') pendingIssueCount,
+        (select count(1) from jsh_depot_head apply_dh
+            where apply_dh.type='其它' and apply_dh.sub_type='请购单'
+            and apply_dh.oper_time &gt;=#{beginTime} and apply_dh.oper_time &lt;=#{endTime}
+            and ifnull(apply_dh.delete_flag,'0') !='1') monthApplyCount,
+        (select count(1) from jsh_depot_head issue_dh
+            inner join jsh_depot_head apply_dh on apply_dh.number=issue_dh.link_number
+                and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+                and ifnull(apply_dh.delete_flag,'0') !='1'
+            where issue_dh.type='出库' and issue_dh.sub_type='其它'
+            and issue_dh.oper_time &gt;=#{beginTime} and issue_dh.oper_time &lt;=#{endTime}
+            and ifnull(issue_dh.delete_flag,'0') !='1') monthIssueCount,
+        (select ifnull(sum(issue_item.oper_number),0) from jsh_depot_head issue_dh
+            inner join jsh_depot_head apply_dh on apply_dh.number=issue_dh.link_number
+                and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+                and ifnull(apply_dh.delete_flag,'0') !='1'
+            inner join jsh_depot_item issue_item on issue_item.header_id=issue_dh.id
+                and ifnull(issue_item.delete_flag,'0') !='1'
+            where issue_dh.type='出库' and issue_dh.sub_type='其它'
+            and ifnull(issue_dh.delete_flag,'0') !='1') totalIssueQuantity,
+        (select ifnull(sum(issue_item.all_price),0) from jsh_depot_head issue_dh
+            inner join jsh_depot_head apply_dh on apply_dh.number=issue_dh.link_number
+                and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+                and ifnull(apply_dh.delete_flag,'0') !='1'
+            inner join jsh_depot_item issue_item on issue_item.header_id=issue_dh.id
+                and ifnull(issue_item.delete_flag,'0') !='1'
+            where issue_dh.type='出库' and issue_dh.sub_type='其它'
+            and ifnull(issue_dh.delete_flag,'0') !='1') totalIssueAmount
+    </select>
+
+    <select id="getOfficeDepartmentRanking" resultType="com.jsh.erp.datasource.vo.OfficeDepartmentRankingVo">
+        select ifnull(o.org_abr, u.username) departmentName,
+            ifnull(sum(issue_item.oper_number),0) quantity,
+            ifnull(sum(issue_item.all_price),0) amount
+        from jsh_depot_head issue_dh
+        inner join jsh_depot_head apply_dh on apply_dh.number=issue_dh.link_number
+            and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+            and ifnull(apply_dh.delete_flag,'0') !='1'
+        inner join jsh_depot_item issue_item on issue_item.header_id=issue_dh.id
+            and ifnull(issue_item.delete_flag,'0') !='1'
+        left join jsh_user u on u.id=apply_dh.creator and ifnull(u.delete_flag,'0') !='1'
+        left join (select user_id, min(orga_id) orga_id from jsh_orga_user_rel
+            where ifnull(delete_flag,'0') !='1' group by user_id) r on r.user_id=apply_dh.creator
+        left join jsh_organization o on o.id=r.orga_id and ifnull(o.delete_flag,'0') !='1'
+        where issue_dh.type='出库' and issue_dh.sub_type='其它'
+            and issue_dh.oper_time &gt;=#{beginTime} and issue_dh.oper_time &lt;=#{endTime}
+            and ifnull(issue_dh.delete_flag,'0') !='1'
+        group by ifnull(o.org_abr, u.username)
+        order by quantity desc
+    </select>
+
     <resultMap extends="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap" id="ResultMapEx" type="com.jsh.erp.datasource.vo.DepotHeadVo4List">
         <result column="depotHeadType" jdbcType="VARCHAR" property="depotHeadType" />
         <result column="OrganName" jdbcType="VARCHAR" property="organName" />
