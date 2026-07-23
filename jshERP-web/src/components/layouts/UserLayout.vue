@@ -1,6 +1,6 @@
 <template>
   <div class="back-layout">
-    <div class="lang-setting">
+    <div v-if="false" class="lang-setting">
       <a-select placeholder="请选择语言" showSearch optionFilterProp="children" :value="currentLang" @change="handleChangeLang" class="select-list">
         <a-select-option class="ignore" value="chinese_simplified">简体中文</a-select-option>
         <a-select-option class="ignore" value="chinese_traditional">繁體中文</a-select-option>
@@ -89,7 +89,7 @@
                 <a-col>
                   <a href="/">
                     <span class="title">{{systemTitle}}</span>
-                    <small class="desc">V3.6</small>
+                    <small class="desc">V1.0</small>
                   </a>
                 </a-col>
               </a-row>
@@ -116,12 +116,6 @@
           <span>小程序版</span>
         </div>
       </div>
-      <p>
-        <span v-if="this.isShowRight">管伊佳科技</span>
-        © 2015-2030 {{systemTitle}} - All Right Reserved 版权所有
-        <a style="color:#00458a; padding-right: 10px" :href="systemUrl" target="_blank">官方网站</a>
-        <span v-if="this.isShowRight"><a href="http://beian.miit.gov.cn/" target="_blank">苏ICP备2021042833号</a></span>
-      </p>
     </div>
     <a-modal v-model="isAndroidShow" title="微信扫一扫下载安卓版" width="200" centered>
       <template slot="footer">
@@ -160,7 +154,6 @@
         isAndroidShow: false,
         isIphoneShow: false,
         isMiniProgramShow: false,
-        currentLang: '',
       }
     },
     mounted () {
@@ -170,7 +163,6 @@
       document.body.classList.remove('userLayout')
     },
     created () {
-      this.currentLang = translate.language.getCurrent()
       let host = window.location.host
       if(host === 'cloud.gyjerp.com') {
         this.isShowRight = true
@@ -196,10 +188,6 @@
       },
       openMiniProgram() {
         this.isMiniProgramShow = true
-      },
-      handleChangeLang(value) {
-        translate.changeLanguage(value)
-        this.currentLang = translate.language.getCurrent()
       }
     }
   }

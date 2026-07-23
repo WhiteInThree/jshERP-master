@@ -83,7 +83,7 @@
         </div>
         <a-divider />
 
-        <div :style="{ marginBottom: '24px' }">
+        <div v-if="false" :style="{ marginBottom: '24px' }">
           <h3 class="setting-drawer-index-title">语言设置</h3>
           <div style="padding: 10px 0 50px 0">
             <div style="float:left; width: 40%; line-height: 30px">{{langSetTitle}}</div>
@@ -230,9 +230,6 @@
         this.$store.dispatch('ToggleMultipage', this.multipage)
       }
     },
-    created () {
-      this.currentLang = translate.language.getCurrent()
-    },
     methods: {
       showDrawer() {
         this.visible = true
@@ -278,10 +275,6 @@
       handleFixSiderbar (fixed) {
         this.fixSiderbar = fixed
         this.$store.dispatch('ToggleFixSiderbar', fixed)
-      },
-      handleChangeLang(value) {
-        translate.changeLanguage(value)
-        this.currentLang = translate.language.getCurrent()
       }
     },
   }

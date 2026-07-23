@@ -214,7 +214,7 @@
               return (t !== '合计') ? (parseInt(index) + 1) : t
             }
           },
-          {title: '发放部门', dataIndex: 'issueDepartment', width: 120, ellipsis:true},
+          {title: '领用部门', dataIndex: 'issueDepartment', width: 120, ellipsis:true},
           {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 120},
           {title: '名称', dataIndex: 'mName', width: 120, ellipsis:true},
           {title: '规格', dataIndex: 'standard', width: 100, ellipsis:true},
@@ -356,7 +356,7 @@
       exportExcel() {
         let list = []
         let quantityTitle = this.roleCode === 'ROLE_DEPT' ? '领用数量' : '出库数量'
-        let head = '发放部门,条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,' + quantityTitle + ',出库金额'
+        let head = '领用部门,条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,' + quantityTitle + ',出库金额'
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
