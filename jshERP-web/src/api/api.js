@@ -5,6 +5,10 @@ const getBuyAndSaleStatistics = (params)=>getAction("/depotHead/getBuyAndSaleSta
 const buyOrSalePrice = (params)=>getAction("/depotItem/buyOrSalePrice",params);
 const getDepartmentDashboard = (params)=>getAction("/depotHead/getDepartmentDashboard",params);
 const getOfficeDashboard = (params)=>getAction("/depotHead/getOfficeDashboard",params);
+//预算管理
+const getBudgetSettingList = (params)=>getAction("/budget/list",params);
+const saveBudgetSetting = (params)=>postAction("/budget/save",params);
+const saveBudgetSettingBatch = (params)=>postAction("/budget/saveBatch",params);
 //租户管理
 const checkTenant = (params)=>getAction("/tenant/checkIsNameExist",params);
 const addTenant = (params)=>postAction("/tenant/add",params);
@@ -129,6 +133,9 @@ export {
   getBuyAndSaleStatistics,
   getDepartmentDashboard,
   getOfficeDashboard,
+  getBudgetSettingList,
+  saveBudgetSetting,
+  saveBudgetSettingBatch,
   buyOrSalePrice,
   checkTenant,
   addTenant,

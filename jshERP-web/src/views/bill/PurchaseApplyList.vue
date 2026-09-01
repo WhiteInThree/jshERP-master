@@ -176,6 +176,7 @@
   import JEllipsis from '@/components/jeecg/JEllipsis'
   import JDate from '@/components/jeecg/JDate'
   import { getAction } from '@/api/manage'
+  import Vue from 'vue'
   export default {
     name: "PurchaseApplyList",
     mixins:[JeecgListMixin,BillListMixin],
@@ -212,7 +213,7 @@
           offset: 1
         },
         // 默认索引
-        defDataIndex:['action','number','materialsList','operTimeStr','userName','materialCount','status'],
+        defDataIndex:['action','number','materialsList','operTimeStr','issueDepartment','userName','materialCount','status'],
         // 默认列
         defColumns: [
           {
@@ -224,6 +225,7 @@
           { title: '单据编号', dataIndex: 'number',width:180},
           { title: '物品信息', dataIndex: 'materialsList',width:320, ellipsis:true},
           { title: '单据日期', dataIndex: 'operTimeStr',width:185},
+          { title: '申请部门', dataIndex: 'issueDepartment',width:120, ellipsis:true},
           { title: '操作员', dataIndex: 'userName',width:120, ellipsis:true},
           { title: '数量', dataIndex: 'materialCount',width:80},
           { title: '备注', dataIndex: 'remark',width:250},
@@ -240,6 +242,7 @@
       }
     },
     created() {
+      this.ensureIssueDepartmentColumn()
       this.initSystemConfig()
       this.initUser()
       this.initQuickBtn()
@@ -260,6 +263,18 @@
       }
     },
     methods: {
+      ensureIssueDepartmentColumn() {
+        const columnsStr = Vue.ls.get(this.prefixNo)
+        if (columnsStr && columnsStr.indexOf(',') > -1) {
+          const columnKeys = columnsStr.split(',')
+          if (columnKeys.indexOf('issueDepartment') === -1) {
+            const operTimeIndex = columnKeys.indexOf('operTimeStr')
+            columnKeys.splice(operTimeIndex + 1, 0, 'issueDepartment')
+            Vue.ls.set(this.prefixNo, columnKeys.join(','))
+            this.initColumnsSetting()
+          }
+        }
+      },
       viewApplyDetail(record) {
         this.myHandleDetail(record, '请购单', this.prefixNo)
         if(!this.canAuditApply) {

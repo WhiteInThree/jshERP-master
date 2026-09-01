@@ -233,7 +233,7 @@ CREATE TABLE `jsh_function`  (
   `delete_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标记，0未删除，1删除',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `url`(`url`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 262 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '功能模块表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 264 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '功能模块表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jsh_function
@@ -303,6 +303,8 @@ INSERT INTO `jsh_function` VALUES (258, '000112', '平台配置', '0001', '/syst
 INSERT INTO `jsh_function` VALUES (259, '030105', '零售统计', '0301', '/report/retail_out_report', '/report/RetailOutReport', b'0', '0615', b'1', '电脑版', '', 'profile', '0');
 INSERT INTO `jsh_function` VALUES (260, '000113', '字典管理', '0001', '/system/dict', '/system/DictList', b'0', '0172', b'1', '电脑版', '', 'profile', '0');
 INSERT INTO `jsh_function` VALUES (261, '050203', '请购单', '0502', '/bill/purchase_apply', '/bill/PurchaseApplyList', b'0', '0330', b'1', '电脑版', '1,2,3,7', 'profile', '0');
+INSERT INTO `jsh_function` VALUES (262, '0901', '预算管理', '0', '/budget', '/layouts/TabLayout', b'0', '0320', b'1', '电脑版', '', 'fund', '0');
+INSERT INTO `jsh_function` VALUES (263, '090101', '预算设置', '0901', '/budget/setting', '/budget/BudgetSetting', b'0', '090101', b'1', '电脑版', '1', 'profile', '0');
 
 -- ----------------------------
 -- Table structure for jsh_in_out_item
@@ -1057,5 +1059,28 @@ INSERT INTO `jsh_user_business` VALUES (57, 'UserCustomer', '121', '[56]', NULL,
 INSERT INTO `jsh_user_business` VALUES (67, 'UserRole', '131', '[17]', NULL, 63, '0');
 INSERT INTO `jsh_user_business` VALUES (68, 'RoleFunctions', '16', '[210]', NULL, 63, '0');
 INSERT INTO `jsh_user_business` VALUES (69, 'RoleFunctions', '17', '[210][225][211][241][32][33][199][242][38][41][200][201][239][202][40][232][233][197][44][203][204][205][206][212]', '[{\"funId\":\"241\",\"btnStr\":\"1,2\"},{\"funId\":\"33\",\"btnStr\":\"1,2\"},{\"funId\":\"199\",\"btnStr\":\"1,2\"},{\"funId\":\"242\",\"btnStr\":\"1,2\"},{\"funId\":\"41\",\"btnStr\":\"1,2\"},{\"funId\":\"200\",\"btnStr\":\"1,2\"},{\"funId\":\"210\",\"btnStr\":\"1,2\"},{\"funId\":\"211\",\"btnStr\":\"1,2\"},{\"funId\":\"197\",\"btnStr\":\"1\"},{\"funId\":\"203\",\"btnStr\":\"1\"},{\"funId\":\"204\",\"btnStr\":\"1\"},{\"funId\":\"205\",\"btnStr\":\"1\"},{\"funId\":\"206\",\"btnStr\":\"1\"},{\"funId\":\"212\",\"btnStr\":\"1\"},{\"funId\":\"201\",\"btnStr\":\"1,2\"},{\"funId\":\"202\",\"btnStr\":\"1,2\"},{\"funId\":\"40\",\"btnStr\":\"1,2\"},{\"funId\":\"232\",\"btnStr\":\"1,2\"},{\"funId\":\"233\",\"btnStr\":\"1,2\"}]', 63, '0');
+
+-- 管理员和租户角色默认拥有预算管理菜单权限
+UPDATE `jsh_user_business`
+SET `value` = CONCAT(IFNULL(`value`, ''), '[262][263]')
+WHERE `type` = 'RoleFunctions' AND `key_id` IN ('4', '10');
+
+-- ----------------------------
+-- Table structure for jsh_budget_setting
+-- ----------------------------
+DROP TABLE IF EXISTS `jsh_budget_setting`;
+CREATE TABLE `jsh_budget_setting` (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `budget_year` int(0) NOT NULL COMMENT '预算年度',
+  `organization_id` bigint(0) NOT NULL COMMENT '部门id',
+  `budget_amount` decimal(24, 6) NOT NULL DEFAULT 0 COMMENT '年度预算金额',
+  `tenant_id` bigint(0) NULL DEFAULT NULL COMMENT '租户id',
+  `delete_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标记',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_budget_year_org_tenant` (`budget_year`,`organization_id`,`tenant_id`) USING BTREE,
+  INDEX `tenant_id` (`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门年度预算设置' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;

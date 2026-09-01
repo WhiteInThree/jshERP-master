@@ -37,6 +37,10 @@
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="申请部门">
+              <a-tree-select style="width:100%" allow-clear :treeData="orgaTree"
+                placeholder="请选择申请部门" v-decorator="['organId', validatorRules.organId]" />
+            </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
           </a-col>
@@ -113,6 +117,7 @@
   import { getMpListShort, changeListFmtMinus,handleIntroJs } from "@/utils/util"
   import JUpload from '@/components/jeecg/JUpload'
   import JDate from '@/components/jeecg/JDate'
+  import { getAllOrganizationTreeByUser } from '@/api/api'
   import Vue from 'vue'
   export default {
     name: "PurchaseApplyModal",
@@ -145,6 +150,7 @@
         addDefaultRowNum: 1,
         visible: false,
         supList: [],
+        orgaTree: [],
         depotList: [],
         operTimeStr: '',
         prefixNo: 'QGD',
@@ -203,7 +209,7 @@
           },
           organId:{
             rules: [
-              { required: true, message: '请选择供应商!' }
+              { required: true, message: '请选择申请部门!' }
             ]
           }
         },
@@ -216,6 +222,7 @@
       }
     },
     created () {
+      this.loadAllOrgaData()
     },
     computed: {
       canAuditApply() {
@@ -247,7 +254,7 @@
           }
           this.fileList = this.model.fileName
           this.$nextTick(() => {
-            this.form.setFieldsValue(pick(this.model, 'operTime', 'number', 'remark'))
+            this.form.setFieldsValue(pick(this.model, 'operTime', 'number', 'organId', 'remark'))
           });
           // 加载子表数据
           let params = {
@@ -298,6 +305,13 @@
         let organId = this.form.getFieldValue('organId')
         this.$refs.historyBillListModalForm.show('其它', '请购单', '', organId);
         this.$refs.historyBillListModalForm.disableSubmit = false;
+      },
+      loadAllOrgaData() {
+        getAllOrganizationTreeByUser({}).then(res => {
+          if (res) {
+            this.orgaTree = res
+          }
+        })
       },
     }
   }

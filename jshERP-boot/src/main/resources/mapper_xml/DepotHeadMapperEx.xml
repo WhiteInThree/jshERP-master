@@ -183,7 +183,7 @@
             and apply_dh.type='其它' and apply_dh.sub_type='请购单' and ifnull(apply_dh.delete_flag,'0') !='1'
         left join (select user_id, min(orga_id) orga_id from jsh_orga_user_rel
             where ifnull(delete_flag,'0') !='1' group by user_id) issue_rel on issue_rel.user_id=apply_dh.creator
-        left join jsh_organization issue_org on issue_org.id=issue_rel.orga_id and ifnull(issue_org.delete_flag,'0') !='1'
+        left join jsh_organization issue_org on issue_org.id=ifnull(apply_dh.organ_id,issue_rel.orga_id) and ifnull(issue_org.delete_flag,'0') !='1'
     </sql>
 
     <sql id="CreatorOrIssueDepartmentCondition">
@@ -339,7 +339,10 @@
         left join (select user_id, min(orga_id) orga_id from jsh_orga_user_rel
             where ifnull(delete_flag,'0') !='1' group by user_id) issue_rel
             on issue_rel.user_id=case when jdh.type='其它' and jdh.sub_type='请购单' then jdh.creator else apply_dh.creator end
-        left join jsh_organization issue_org on issue_org.id=issue_rel.orga_id and ifnull(issue_org.delete_flag,'0') !='1'
+        left join jsh_organization issue_org on issue_org.id=case
+            when jdh.type='其它' and jdh.sub_type='请购单' then ifnull(jdh.organ_id,issue_rel.orga_id)
+            else ifnull(apply_dh.organ_id,issue_rel.orga_id) end
+            and ifnull(issue_org.delete_flag,'0') !='1'
         left join jsh_user u on jdh.creator=u.id
         left join jsh_account a on jdh.account_id=a.id and ifnull(a.delete_flag,'0') !='1'
         order by jdh.id desc
