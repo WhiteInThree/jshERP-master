@@ -154,7 +154,7 @@
           </a-table>
           <a-row :gutter="24" style="margin-top: 8px;text-align:right;">
             <a-col :md="24" :sm="24">
-              <a-pagination @change="paginationChange" @showSizeChange="paginationShowSizeChange"
+          <a-pagination v-if="false" @change="paginationChange" @showSizeChange="paginationShowSizeChange"
                 size="small"
                 show-size-changer
                 :showQuickJumper="true"
@@ -236,8 +236,7 @@
         tabKey: "1",
         pageName: 'outDetail',
         // 默认索引
-        defDataIndex:['rowIndex','number','issueDepartment','barCode','mname','standard','model','mUnit','operNumber', 'unitPrice','allPrice',
-          'taxRate','taxMoney','sname','dname','operTime','newRemark'],
+        defDataIndex:['rowIndex','barCode','mname','standard','model','mUnit'],
         // 默认列
         defColumns: [
           {
@@ -246,29 +245,11 @@
               return (t !== '合计') ? (parseInt(index) + 1) : t
             }
           },
-          {
-            title: '单据编号', dataIndex: 'number', width: 100,
-            scopedSlots: { customRender: 'numberCustomRender' },
-          },
-          {title: '部门', dataIndex: 'issueDepartment', width: 80, ellipsis:true},
           {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 80},
           {title: '名称', dataIndex: 'mname', width: 120, ellipsis:true},
           {title: '规格', dataIndex: 'standard', width: 60, ellipsis:true},
           {title: '型号', dataIndex: 'model', width: 60, ellipsis:true},
-          {title: '颜色', dataIndex: 'color', width: 40, ellipsis:true},
-          {title: '品牌', dataIndex: 'brand', width: 60, ellipsis:true},
-          {title: '制造商', dataIndex: 'mfrs', width: 60, ellipsis:true},
-          {title: '单位', dataIndex: 'mUnit', width: 50, ellipsis:true},
-          {title: '多属性', dataIndex: 'sku', width: 100, ellipsis:true},
-          {title: '数量', dataIndex: 'operNumber', sorter: (a, b) => a.operNumber - b.operNumber, width: 60},
-          {title: '单价', dataIndex: 'unitPrice', sorter: (a, b) => a.unitPrice - b.unitPrice, width: 60},
-          {title: '金额', dataIndex: 'allPrice', sorter: (a, b) => a.allPrice - b.allPrice, width: 60},
-          {title: '税率(%)', dataIndex: 'taxRate', width: 60},
-          {title: '税额', dataIndex: 'taxMoney', sorter: (a, b) => a.taxMoney - b.taxMoney, width: 60},
-          {title: '往来单位', dataIndex: 'sname', width: 80, ellipsis:true},
-          {title: '仓库', dataIndex: 'dname', width: 80, ellipsis:true},
-          {title: '出库日期', dataIndex: 'operTime', width: 70},
-          {title: '备注', dataIndex: 'newRemark', width: 100, ellipsis:true}
+          {title: '单位', dataIndex: 'mUnit', width: 50, ellipsis:true}
         ],
         url: {
           list: "/depotHead/findInOutDetail",
@@ -317,8 +298,8 @@
       getQueryParams() {
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
-        param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.currentPage = 1;
+        param.pageSize = 100000;
         return param;
       },
       onDateChange: function (value, dateString) {
@@ -336,11 +317,12 @@
         this.loading = true;
         getAction(this.url.list, params).then((res) => {
           if (res.code===200) {
-            this.dataSource = res.data.rows;
-            this.ipagination.total = res.data.total;
+            const matrix = this.buildDepartmentMatrix(res.data.rows || [])
+            this.columns = matrix.columns
+            this.dataSource = matrix.rows
+            this.ipagination.total = matrix.rows.length
             this.operNumberTotalStr = res.data.operNumberTotal.toFixed(2)
             this.allPriceTotalStr = res.data.allPriceTotal.toFixed(2)
-            this.tableAddTotalRow(this.columns, this.dataSource)
           } else if(res.code===510){
             this.$message.warning(res.data)
           } else {
@@ -348,6 +330,56 @@
           }
           this.loading = false;
         })
+      },
+      buildDepartmentMatrix(details) {
+        const departmentNames = []
+        const departmentIndex = {}
+        details.forEach(item => {
+          const name = item.issueDepartment || '未分配部门'
+          if(departmentIndex[name] === undefined) {
+            departmentIndex[name] = departmentNames.length
+            departmentNames.push(name)
+          }
+        })
+        const baseColumns = [
+          {title: '#', dataIndex: 'rowIndex', width: 40, align: 'center'},
+          {title: '条码', dataIndex: 'barCode', width: 100},
+          {title: '名称', dataIndex: 'mname', width: 140},
+          {title: '规格', dataIndex: 'standard', width: 80},
+          {title: '型号', dataIndex: 'model', width: 80},
+          {title: '单位', dataIndex: 'mUnit', width: 60}
+        ]
+        const departmentColumns = departmentNames.map((name, index) => ({
+          title: name,
+          children: [
+            {title: '数量', dataIndex: `dept_${index}_number`, width: 80},
+            {title: '单价', dataIndex: `dept_${index}_price`, width: 80},
+            {title: '金额', dataIndex: `dept_${index}_amount`, width: 90}
+          ]
+        }))
+        const rowMap = {}
+        details.forEach(item => {
+          const materialKey = [item.barCode || '', item.sku || '', item.mUnit || ''].join('|')
+          if(!rowMap[materialKey]) {
+            rowMap[materialKey] = {
+              barCode: item.barCode,
+              mname: item.mname,
+              standard: item.standard,
+              model: item.model,
+              mUnit: item.mUnit
+            }
+          }
+          const index = departmentIndex[item.issueDepartment || '未分配部门']
+          const numberKey = `dept_${index}_number`
+          const priceKey = `dept_${index}_price`
+          const amountKey = `dept_${index}_amount`
+          const row = rowMap[materialKey]
+          row[numberKey] = (row[numberKey] || 0) + Number(item.operNumber || 0)
+          row[amountKey] = (row[amountKey] || 0) + Number(item.allPrice || 0)
+          row[priceKey] = row[numberKey] ? Number((row[amountKey] / row[numberKey]).toFixed(4)) : 0
+        })
+        const rows = Object.keys(rowMap).map((key, index) => Object.assign({id: key, rowIndex: index + 1}, rowMap[key]))
+        return {columns: baseColumns.concat(departmentColumns), rows, departmentNames}
       },
       initOrgan() {
         let that = this;
@@ -426,13 +458,16 @@
       },
       exportExcel() {
         let list = []
-        let dateTitle = this.roleCode === 'ROLE_DEPT' ? '领用日期' : '出库日期'
-        let head = '单据编号,部门,条码,名称,规格,型号,颜色,品牌,制造商,单位,多属性,数量,单价,金额,税率(%),税额,往来单位,仓库,' + dateTitle + ',备注'
+        const departments = this.columns.filter(item => item.children).map(item => item.title)
+        let head = '条码,名称,规格,型号,单位'
+        departments.forEach(name => { head += `,${name}-数量,${name}-单价,${name}-金额` })
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
-          item.push(ds.number, ds.issueDepartment, ds.barCode, ds.mname, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs, ds.mUnit, ds.sku,
-            ds.operNumber, ds.unitPrice, ds.allPrice, ds.taxRate, ds.taxMoney, ds.sname, ds.dname, ds.operTime, ds.newRemark)
+          item.push(ds.barCode, ds.mname, ds.standard, ds.model, ds.mUnit)
+          departments.forEach((name, index) => {
+            item.push(ds[`dept_${index}_number`] || 0, ds[`dept_${index}_price`] || 0, ds[`dept_${index}_amount`] || 0)
+          })
           list.push(item)
         }
         let tip = '单据日期：' + this.queryParam.beginTime + '~' + this.queryParam.endTime

@@ -176,6 +176,7 @@
   import JEllipsis from '@/components/jeecg/JEllipsis'
   import JDate from '@/components/jeecg/JDate'
   import { getAction } from '@/api/manage'
+  import { getBudgetSettingList } from '@/api/api'
   import Vue from 'vue'
   export default {
     name: "PurchaseApplyList",
@@ -193,6 +194,7 @@
       return {
         roleCode: '',
         issueLoading: false,
+        budgetMap: {},
         // 查询条件
         queryParam: {
           number: "",
@@ -226,6 +228,7 @@
           { title: '物品信息', dataIndex: 'materialsList',width:320, ellipsis:true},
           { title: '单据日期', dataIndex: 'operTimeStr',width:185},
           { title: '申请部门', dataIndex: 'issueDepartment',width:120, ellipsis:true},
+          { title: '可用预算', dataIndex: 'availableBudget',width:120, ellipsis:true},
           { title: '操作员', dataIndex: 'userName',width:120, ellipsis:true},
           { title: '数量', dataIndex: 'materialCount',width:80},
           { title: '备注', dataIndex: 'remark',width:250},
@@ -248,6 +251,11 @@
       this.initQuickBtn()
       this.getDepotByCurrentUser()
       this.loadCurrentRoleCode()
+      this.loadBudgetMap()
+    },
+    watch: {
+      dataSource: { deep: true, handler (rows) { this.applyBudget(rows) } },
+      budgetMap: { deep: true, handler () { this.applyBudget(this.dataSource) } }
     },
     computed: {
       canConfirmIssue() {
@@ -274,6 +282,23 @@
             this.initColumnsSetting()
           }
         }
+      },
+      loadBudgetMap() {
+        getBudgetSettingList({ year: new Date().getFullYear() }).then(res => {
+          if (res && res.code === 200) {
+            this.budgetMap = {}
+            ;(res.data || []).forEach(item => { this.budgetMap[item.organizationName] = Number(item.availableAmount || 0).toFixed(2) })
+            this.applyBudget(this.dataSource)
+          }
+        })
+      },
+      applyBudget(rows) {
+        if (!rows || !rows.length) return
+        rows.forEach(row => {
+          const value = this.budgetMap[row.issueDepartment]
+          const display = value == null ? '-' : value
+          if (row.availableBudget !== display) this.$set(row, 'availableBudget', display)
+        })
       },
       viewApplyDetail(record) {
         this.myHandleDetail(record, '请购单', this.prefixNo)

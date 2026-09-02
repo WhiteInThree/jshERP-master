@@ -265,4 +265,6 @@ public interface DepotItemMapperEx {
             @Param("meId") Long meId,
             @Param("type") String type,
             @Param("subType") String subType);
+
+    BigDecimal getPurchaseUnitPriceByYear(@Param("meId") Long meId, @Param("operTime") Date operTime);
 }

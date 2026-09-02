@@ -73,8 +73,6 @@
           },
           { title: '仓库名称', dataIndex: 'depotName', width: 200},
           { title: '库存数量', dataIndex: 'currentNumber', width: 100},
-          { title: '成本价', dataIndex: 'unitPrice', width: 100},
-          { title: '库存金额', dataIndex: 'allPrice', width: 100}
         ],
         labelCol: {
           xs: { span: 1 },

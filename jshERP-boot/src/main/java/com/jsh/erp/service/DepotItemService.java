@@ -576,14 +576,31 @@ public class DepotItemService {
                 if(BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType()) ||
                     BusinessConstants.SUB_TYPE_SALES_RETURN.equals(depotHead.getSubType()) ||
                     BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType()) ||
-                    BusinessConstants.SUB_TYPE_RETAIL_RETURN.equals(depotHead.getSubType())) {
+                    BusinessConstants.SUB_TYPE_RETAIL_RETURN.equals(depotHead.getSubType()) ||
+                    BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType())) {
                     boolean moveAvgPriceFlag = systemConfigService.getMoveAvgPriceFlag();
                     BigDecimal currentUnitPrice = materialCurrentStockMapperEx.getCurrentUnitPriceByMId(materialExtend.getMaterialId());
                     currentUnitPrice = unitService.parseUnitPriceByUnit(currentUnitPrice, unitInfo, depotItem.getMaterialUnit());
-                    BigDecimal unitPrice = moveAvgPriceFlag? currentUnitPrice: materialExtend.getPurchaseDecimal();
+                    BigDecimal unitPrice = moveAvgPriceFlag ? currentUnitPrice :
+                            depotItemMapperEx.getPurchaseUnitPriceByYear(depotItem.getMaterialExtendId(), depotHead.getOperTime());
+                    if (unitPrice == null) {
+                        unitPrice = materialExtend.getPurchaseDecimal();
+                    }
                     depotItem.setPurchaseUnitPrice(unitPrice);
+                    // 其它出库（含领用出库）以采购入库成本作为单据单价，避免前端仍使用物品档案采购价
+                    if (BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType())) {
+                        depotItem.setUnitPrice(unitPrice);
+                        if (depotItem.getOperNumber() != null) {
+                            depotItem.setAllPrice(depotItem.getOperNumber().multiply(unitPrice)
+                                    .setScale(2, BigDecimal.ROUND_HALF_UP));
+                        }
+                    }
                     if(StringUtil.isNotEmpty(depotItem.getBatchNumber())) {
-                        depotItem.setPurchaseUnitPrice(getDepotItemByBatchNumber(depotItem.getMaterialExtendId(),depotItem.getBatchNumber()).getUnitPrice());
+                        BigDecimal batchUnitPrice = getDepotItemByBatchNumber(depotItem.getMaterialExtendId(), depotItem.getBatchNumber()).getUnitPrice();
+                        depotItem.setPurchaseUnitPrice(batchUnitPrice);
+                        if (BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType())) {
+                            depotItem.setUnitPrice(batchUnitPrice);
+                        }
                     }
                 }
                 if (StringUtil.isExist(rowObj.get("taxUnitPrice"))) {

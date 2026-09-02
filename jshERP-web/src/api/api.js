@@ -9,6 +9,8 @@ const getOfficeDashboard = (params)=>getAction("/depotHead/getOfficeDashboard",p
 const getBudgetSettingList = (params)=>getAction("/budget/list",params);
 const saveBudgetSetting = (params)=>postAction("/budget/save",params);
 const saveBudgetSettingBatch = (params)=>postAction("/budget/saveBatch",params);
+const getBudgetStatistics = (params)=>getAction("/budget/report",params);
+const importBudgetSetting = (params)=>postAction("/budget/import",params);
 //租户管理
 const checkTenant = (params)=>getAction("/tenant/checkIsNameExist",params);
 const addTenant = (params)=>postAction("/tenant/add",params);
@@ -136,6 +138,8 @@ export {
   getBudgetSettingList,
   saveBudgetSetting,
   saveBudgetSettingBatch,
+  getBudgetStatistics,
+  importBudgetSetting,
   buyOrSalePrice,
   checkTenant,
   addTenant,

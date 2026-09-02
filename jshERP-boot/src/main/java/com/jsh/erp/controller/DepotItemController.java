@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.*;
+import com.jsh.erp.datasource.mappers.DepotItemMapperEx;
 import com.jsh.erp.datasource.vo.DepotItemStockWarningCount;
 import com.jsh.erp.datasource.vo.DepotItemVoBatchNumberList;
 import com.jsh.erp.datasource.vo.InOutPriceVo;
@@ -34,6 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,9 @@ public class DepotItemController {
 
     @Resource
     private DepotItemService depotItemService;
+
+    @Resource
+    private DepotItemMapperEx depotItemMapperEx;
 
     @Resource
     private MaterialService materialService;
@@ -202,7 +207,8 @@ public class DepotItemController {
             Long userId = userService.getUserId(request);
             String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
             List<DepotItemVo4WithInfoEx> dataList = new ArrayList<>();
-            String billCategory = depotHeadService.getBillCategory(depotHeadService.getDepotHead(headerId).getSubType());
+            DepotHead detailHead = depotHeadService.getDepotHead(headerId);
+            String billCategory = depotHeadService.getBillCategory(detailHead.getSubType());
             if(headerId != 0) {
                 dataList = depotItemService.getDetailList(headerId);
             }
@@ -258,7 +264,16 @@ public class DepotItemController {
                     item.put("finishPurchaseNumber", finishPurchaseNumber); //已采购（以销定购的情况）
                     BigDecimal finishNumber = depotItemService.getFinishNumber(diEx.getMaterialExtendId(), diEx.getId(), diEx.getHeaderId(), unitInfo, materialUnit, linkType);
                     item.put("finishNumber", finishNumber); //已采购|已销售|已入库|已出库
-                    item.put("purchaseDecimal", roleService.parseBillPriceByLimit(diEx.getPurchaseDecimal(), billCategory, priceLimit, request));  //采购价
+                    BigDecimal purchasePrice = diEx.getPurchaseDecimal();
+                    if (BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(detailHead.getType())
+                            && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(detailHead.getSubType())) {
+                        BigDecimal annualPurchasePrice = depotItemMapperEx.getPurchaseUnitPriceByYear(
+                                diEx.getMaterialExtendId(), new Date());
+                        if (annualPurchasePrice != null) {
+                            purchasePrice = annualPurchasePrice;
+                        }
+                    }
+                    item.put("purchaseDecimal", roleService.parseBillPriceByLimit(purchasePrice, billCategory, priceLimit, request));  //采购价
                     if("basic".equals(linkType) || "1".equals(isReadOnly)) {
                         //正常情况显示金额，而以销定购的情况不能显示金额
                         item.put("unitPrice", roleService.parseBillPriceByLimit(diEx.getUnitPrice(), billCategory, priceLimit, request));
@@ -395,12 +410,18 @@ public class DepotItemController {
                     if(moveAvgPriceFlag) {
                         item.put("unitPrice", roleService.parseStockPriceByLimit(diEx.getCurrentUnitPrice(), priceLimit, request));
                     } else {
-                        item.put("unitPrice", roleService.parseStockPriceByLimit(diEx.getPurchaseDecimal(), priceLimit, request));
+                        BigDecimal annualPurchasePrice = depotItemMapperEx.getPurchaseUnitPriceByYear(
+                                diEx.getMaterialExtendId(), Tools.strToDate(endTime));
+                        BigDecimal unitPrice = annualPurchasePrice != null ? annualPurchasePrice : diEx.getPurchaseDecimal();
+                        item.put("unitPrice", roleService.parseStockPriceByLimit(unitPrice, priceLimit, request));
                     }
                     if(moveAvgPriceFlag) {
                         item.put("thisAllPrice", roleService.parseStockPriceByLimit(thisSum.multiply(diEx.getCurrentUnitPrice()), priceLimit, request));
                     } else {
-                        item.put("thisAllPrice", roleService.parseStockPriceByLimit(thisSum.multiply(diEx.getPurchaseDecimal()), priceLimit, request));
+                        BigDecimal annualPurchasePrice = depotItemMapperEx.getPurchaseUnitPriceByYear(
+                                diEx.getMaterialExtendId(), Tools.strToDate(endTime));
+                        BigDecimal unitPrice = annualPurchasePrice != null ? annualPurchasePrice : diEx.getPurchaseDecimal();
+                        item.put("thisAllPrice", roleService.parseStockPriceByLimit(thisSum.multiply(unitPrice), priceLimit, request));
                     }
                     item.put("imgName", diEx.getImgName());
                     if(fileUploadType == 2) {
@@ -464,7 +485,9 @@ public class DepotItemController {
                     if(moveAvgPriceFlag) {
                         unitPrice = diEx.getCurrentUnitPrice();
                     } else {
-                        unitPrice = diEx.getPurchaseDecimal();
+                        BigDecimal annualPurchasePrice = depotItemMapperEx.getPurchaseUnitPriceByYear(
+                                diEx.getMaterialExtendId(), Tools.strToDate(endTime));
+                        unitPrice = annualPurchasePrice != null ? annualPurchasePrice : diEx.getPurchaseDecimal();
                     }
                     if(unitPrice == null) {
                         unitPrice = BigDecimal.ZERO;

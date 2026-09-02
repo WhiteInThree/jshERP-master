@@ -233,7 +233,7 @@ CREATE TABLE `jsh_function`  (
   `delete_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标记，0未删除，1删除',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `url`(`url`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 264 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '功能模块表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 265 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '功能模块表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jsh_function
@@ -305,6 +305,7 @@ INSERT INTO `jsh_function` VALUES (260, '000113', '字典管理', '0001', '/syst
 INSERT INTO `jsh_function` VALUES (261, '050203', '请购单', '0502', '/bill/purchase_apply', '/bill/PurchaseApplyList', b'0', '0330', b'1', '电脑版', '1,2,3,7', 'profile', '0');
 INSERT INTO `jsh_function` VALUES (262, '0901', '预算管理', '0', '/budget', '/layouts/TabLayout', b'0', '0320', b'1', '电脑版', '', 'fund', '0');
 INSERT INTO `jsh_function` VALUES (263, '090101', '预算设置', '0901', '/budget/setting', '/budget/BudgetSetting', b'0', '090101', b'1', '电脑版', '1', 'profile', '0');
+INSERT INTO `jsh_function` VALUES (264, '030114', '预算统计', '0301', '/report/budget_report', '/report/BudgetReport', b'0', '0675', b'1', '电脑版', '', 'profile', '0');
 
 -- ----------------------------
 -- Table structure for jsh_in_out_item
@@ -1064,6 +1065,14 @@ INSERT INTO `jsh_user_business` VALUES (69, 'RoleFunctions', '17', '[210][225][2
 UPDATE `jsh_user_business`
 SET `value` = CONCAT(IFNULL(`value`, ''), '[262][263]')
 WHERE `type` = 'RoleFunctions' AND `key_id` IN ('4', '10');
+
+UPDATE `jsh_user_business`
+SET `value` = CONCAT(
+  IFNULL(`value`, ''),
+  IF(IFNULL(`value`, '') LIKE '%[198]%', '', '[198]'),
+  IF(IFNULL(`value`, '') LIKE '%[264]%', '', '[264]')
+)
+WHERE `type` = 'RoleFunctions' AND `key_id` IN ('4', '10', '16');
 
 -- ----------------------------
 -- Table structure for jsh_budget_setting

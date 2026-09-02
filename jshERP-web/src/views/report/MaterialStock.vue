@@ -205,7 +205,7 @@
         pageName: 'materialStock',
         // 默认索引
         defDataIndex:['rowIndex','action','mBarCode','name','standard','model','color','categoryName', 'position','unitName',
-          'purchaseDecimal','initialStock','currentStock','currentStockPrice','currentWeight'],
+          'initialStock','currentStock','currentWeight'],
         // 默认列
         defColumns: [
           {
@@ -228,7 +228,6 @@
           {title: '类别', dataIndex: 'categoryName', width: 60, ellipsis:true},
           {title: '仓位货架', dataIndex: 'position', width: 60, ellipsis:true},
           {title: '单位', dataIndex: 'unitName', width: 60, ellipsis:true},
-          {title: '成本价', dataIndex: 'purchaseDecimal', sorter: (a, b) => a.purchaseDecimal - b.purchaseDecimal, width: 60},
           {title: '初始库存', dataIndex: 'initialStock', width: 60},
           {title: '库存', dataIndex: 'currentStock', sorter: (a, b) => a.currentStock - b.currentStock, width: 60,
             scopedSlots: { customRender: 'customRenderStock' }

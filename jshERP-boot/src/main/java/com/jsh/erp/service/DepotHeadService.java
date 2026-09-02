@@ -1359,8 +1359,11 @@ public class DepotHeadService {
                     || applyItem.getOperNumber().compareTo(row.getBigDecimal("operNumber")) != 0) {
                 throwConfirmIssueDetailException();
             }
-            BigDecimal unitPrice = materialExtend.getPurchaseDecimal() == null
-                    ? BigDecimal.ZERO : materialExtend.getPurchaseDecimal();
+            BigDecimal unitPrice = depotItemMapperEx.getPurchaseUnitPriceByYear(materialExtend.getId(), issueHead.getOperTime());
+            if (unitPrice == null) {
+                unitPrice = materialExtend.getPurchaseDecimal() == null
+                        ? BigDecimal.ZERO : materialExtend.getPurchaseDecimal();
+            }
             BigDecimal allPrice = row.getBigDecimal("operNumber").multiply(unitPrice)
                     .setScale(2, RoundingMode.HALF_UP);
             row.put("unitPrice", unitPrice);

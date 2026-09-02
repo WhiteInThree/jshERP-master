@@ -16,6 +16,11 @@
           </a-select>
         </a-form-item>
         <a-form-item>
+          <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader"
+                    :data="{year: year}" :action="importUrl" @change="handleImport">
+            <a-button icon="upload">导入</a-button>
+          </a-upload>
+          <a-button style="margin-left: 8px" icon="download" @click="exportReport">导出</a-button>
           <a-button style="margin-left: 8px" icon="reload" @click="resetQuery">重置筛选</a-button>
           <a-button style="margin-left: 8px" type="primary" icon="save" :loading="saving" :disabled="readOnly" @click="saveAll">保存设置</a-button>
         </a-form-item>
@@ -39,9 +44,13 @@
 
 <script>
 import { getBudgetSettingList, saveBudgetSetting } from '@/api/api'
+import { ACCESS_TOKEN } from '@/store/mutation-types'
+import Vue from 'vue'
+import { JeecgListMixin } from '@/mixins/JeecgListMixin'
 
 export default {
   name: 'BudgetSetting',
+  mixins: [JeecgListMixin],
   data () {
     const currentYear = new Date().getFullYear()
     return {
@@ -58,6 +67,7 @@ export default {
       ],
       currentYear,
       yearOptions: Array.from({ length: currentYear - 2026 + 2 }, (_, index) => currentYear + 1 - index)
+      ,tokenHeader: {'X-Access-Token': Vue.ls.get(ACCESS_TOKEN)}
     }
   },
   computed: {
@@ -74,12 +84,24 @@ export default {
     filteredData () {
       if (!this.selectedOrganizations.length) return this.dataSource
       return this.dataSource.filter(item => this.selectedOrganizations.indexOf(item.organizationId) !== -1)
-    }
+    },
+    importUrl () { return `${window._CONFIG['domianURL']}/budget/import` }
   },
   mounted () {
     this.loadData()
   },
   methods: {
+    handleImport (info) {
+      if (info.file.status === 'done') {
+        if (info.file.response && info.file.response.code === 200) { this.$message.success('预算导入成功'); this.loadData() }
+        else this.$message.error((info.file.response && info.file.response.data) || '预算导入失败')
+      } else if (info.file.status === 'error') this.$message.error('预算导入失败')
+    },
+    exportReport () {
+      const head = '部门,年度预算,已用预算,可用预算'
+      const list = this.filteredData.map(item => [item.organizationName, item.budgetAmount, item.usedAmount, item.availableAmount])
+      this.handleExportXlsPost('预算报表', '预算报表', head, `${this.year}年度预算`, list)
+    },
     loadData () {
       this.loading = true
       this.selectedOrganizations = []
@@ -133,5 +155,4 @@ export default {
       return Number(value || 0).toFixed(2)
     }
   }
-}
 </script>
