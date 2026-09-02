@@ -24,7 +24,7 @@ public interface BudgetSettingMapper {
     @Select("select * from jsh_budget_setting where budget_year=#{year} and organization_id=#{organizationId} and tenant_id=#{tenantId} and ifnull(delete_flag,'0')!='1' limit 1")
     BudgetSetting find(@Param("year") Integer year, @Param("organizationId") Long organizationId, @Param("tenantId") Long tenantId);
 
-    @Insert("insert into jsh_budget_setting(budget_year,organization_id,budget_amount,delete_flag,create_time,update_time) values(#{budgetYear},#{organizationId},#{budgetAmount},'0',now(),now())")
+    @Insert("insert into jsh_budget_setting(budget_year,organization_id,budget_amount,tenant_id,delete_flag,create_time,update_time) values(#{budgetYear},#{organizationId},#{budgetAmount},#{tenantId},'0',now(),now())")
     int insert(BudgetSetting setting);
 
     @Update("update jsh_budget_setting set budget_amount=#{budgetAmount},update_time=now() where id=#{id} and tenant_id=#{tenantId}")
