@@ -337,6 +337,25 @@ public class DepotHeadController extends BaseController {
         return res;
     }
 
+    @GetMapping(value = "/findReceiveMaterialCount")
+    @ApiOperation(value = "年度领用数量汇总")
+    public BaseResponseInfo findReceiveMaterialCount(
+            @RequestParam(value = "year", required = false) Integer year) {
+        BaseResponseInfo res = new BaseResponseInfo();
+        try {
+            if (year == null) {
+                year = java.time.LocalDate.now().getYear();
+            }
+            res.code = 200;
+            res.data = depotHeadService.findReceiveMaterialCount(year);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            res.code = 500;
+            res.data = "获取数据失败";
+        }
+        return res;
+    }
+
     /**
      * 调拨明细统计
      * @param currentPage

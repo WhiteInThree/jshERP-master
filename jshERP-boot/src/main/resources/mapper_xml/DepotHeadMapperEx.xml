@@ -66,6 +66,40 @@
         limit #{rows}
     </select>
 
+    <select id="findReceiveMaterialCount" resultType="com.jsh.erp.datasource.vo.ReceiveMaterialCountVo">
+        select m.id materialId, m.name mName, concat_ws('', m.unit, u.basic_unit) materialUnit,
+            ifnull(sum(case when month(issue_dh.oper_time) = 1 then issue_item.basic_number else 0 end), 0) month1,
+            ifnull(sum(case when month(issue_dh.oper_time) = 2 then issue_item.basic_number else 0 end), 0) month2,
+            ifnull(sum(case when month(issue_dh.oper_time) = 3 then issue_item.basic_number else 0 end), 0) month3,
+            ifnull(sum(case when month(issue_dh.oper_time) = 4 then issue_item.basic_number else 0 end), 0) month4,
+            ifnull(sum(case when month(issue_dh.oper_time) = 5 then issue_item.basic_number else 0 end), 0) month5,
+            ifnull(sum(case when month(issue_dh.oper_time) = 6 then issue_item.basic_number else 0 end), 0) month6,
+            ifnull(sum(case when month(issue_dh.oper_time) = 7 then issue_item.basic_number else 0 end), 0) month7,
+            ifnull(sum(case when month(issue_dh.oper_time) = 8 then issue_item.basic_number else 0 end), 0) month8,
+            ifnull(sum(case when month(issue_dh.oper_time) = 9 then issue_item.basic_number else 0 end), 0) month9,
+            ifnull(sum(case when month(issue_dh.oper_time) = 10 then issue_item.basic_number else 0 end), 0) month10,
+            ifnull(sum(case when month(issue_dh.oper_time) = 11 then issue_item.basic_number else 0 end), 0) month11,
+            ifnull(sum(case when month(issue_dh.oper_time) = 12 then issue_item.basic_number else 0 end), 0) month12
+        from jsh_material m
+        left join jsh_unit u on u.id=m.unit_id and ifnull(u.delete_flag,'0') != '1'
+        left join jsh_depot_item issue_item on issue_item.material_id=m.id
+            and ifnull(issue_item.delete_flag,'0') != '1'
+        left join jsh_depot_head issue_dh on issue_dh.id=issue_item.header_id
+            and issue_dh.type='出库' and issue_dh.sub_type='其它'
+            and year(issue_dh.oper_time)=#{year}
+            and ifnull(issue_dh.delete_flag,'0') != '1'
+            and exists (select 1 from jsh_depot_head apply_dh2
+                where apply_dh2.number=issue_dh.link_number
+                and apply_dh2.type='其它' and apply_dh2.sub_type='请购单'
+                and apply_dh2.status='4' and ifnull(apply_dh2.delete_flag,'0') != '1')
+        left join jsh_depot_head apply_dh on apply_dh.number=issue_dh.link_number
+            and apply_dh.type='其它' and apply_dh.sub_type='请购单'
+            and apply_dh.status='4' and ifnull(apply_dh.delete_flag,'0') != '1'
+        where ifnull(m.delete_flag,'0') != '1' and ifnull(m.enabled,1)=1
+        group by m.id, m.name, m.unit, u.basic_unit
+        order by m.id
+    </select>
+
     <select id="getOfficeDashboardSummary" resultType="com.jsh.erp.datasource.vo.OfficeDashboardVo">
         select
         (select count(1) from jsh_depot_head apply_dh
@@ -141,6 +175,7 @@
 
     <resultMap id="ResultWithInfoExMap" type="com.jsh.erp.datasource.vo.DepotHeadVo4InDetail">
         <result column="number" jdbcType="VARCHAR" property="number" />
+        <result column="materialId" jdbcType="BIGINT" property="materialId" />
         <result column="barCode" jdbcType="VARCHAR" property="barCode" />
         <result column="mname" jdbcType="VARCHAR" property="mname" />
         <result column="model" jdbcType="VARCHAR" property="model" />
@@ -378,7 +413,7 @@
     </select>
 
     <select id="findInOutDetail" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">
-        select dh.number,me.bar_code barCode, m.name mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit, di.sku,
+        select dh.number,di.material_id materialId,me.bar_code barCode, m.name mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit, di.sku,
         di.oper_number operNumber,di.all_price allPrice, ifnull(di.tax_rate,0) taxRate, ifnull(di.tax_money,0) taxMoney, ifnull(di.tax_last_money,0) taxLastMoney,
         s.supplier sname, issue_org.org_abr issueDepartment,d.dname dname, date_format(dh.oper_time, '%Y-%m-%d') operTime, concat(dh.sub_type,dh.type) as newType,
         concat_ws('  ',dh.remark,di.remark) as newRemark
@@ -585,7 +620,7 @@
 
     <select id="findInOutMaterialCount" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultInOutMaterialCount">
         select di.material_id materialId, me.bar_code barCode, m.name mName,m.model,m.standard,m.color,m.brand,m.mfrs,
-               mc.name categoryName,concat_ws('', m.unit, u.basic_unit) materialUnit, issue_org.org_abr issueDepartment,
+               mc.name categoryName,concat_ws('', m.unit, u.basic_unit) materialUnit,
         sum(di.basic_number) numSum,
         sum(di.all_price) priceSum
         from jsh_depot_head dh
@@ -649,7 +684,7 @@
         </if>
         and ifnull(dh.delete_flag,'0') !='1'
         group by di.material_id, me.bar_code, m.name,m.model,m.standard,m.color,m.brand,m.mfrs,
-        mc.name, m.unit, u.basic_unit, issue_org.org_abr
+        mc.name, m.unit, u.basic_unit
         <if test="column == 'createTime'">
             order by materialId desc
         </if>
@@ -726,7 +761,7 @@
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         and ifnull(dh.delete_flag,'0') !='1'
-        group by di.material_id, issue_org.org_abr) a
+        group by di.material_id) a
     </select>
 
     <select id="findInOutMaterialCountStatistic" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultInOutMaterialCount">

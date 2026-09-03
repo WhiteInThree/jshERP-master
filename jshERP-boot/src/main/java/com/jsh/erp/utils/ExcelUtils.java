@@ -113,7 +113,13 @@ public class ExcelUtils {
 	 */
 
 	public static File exportObjectsOneSheet(String path, String fileName, String tip,
-											 String[] names, String title, List<Object[]> objects) throws Exception {
+												 String[] names, String title, List<Object[]> objects) throws Exception {
+		return exportObjectsOneSheet(path, fileName, tip, new String[][]{names}, title, objects);
+	}
+
+	/** 导出支持多行表头的单个sheet。 */
+	public static File exportObjectsOneSheet(String path, String fileName, String tip,
+												 String[][] headerRows, String title, List<Object[]> objects) throws Exception {
 		FileUtils.makedir(path);
 		File excelFile = new File(path + File.separator + fileName);
 		WritableWorkbook wtwb = Workbook.createWorkbook(excelFile);
@@ -148,17 +154,20 @@ public class ExcelUtils {
 			sheet.addCell(new Label(0, 0, tip, blackWFFC));
 		}
 
-		// 第二行写入标题
-		for (int i = 0; i < names.length; i++) {
-			if(StringUtil.isNotEmpty(names[i]) && names[i].contains("*")) {
-				sheet.addCell(new Label(i, 1, names[i], redWFFC));
-			} else {
-				sheet.addCell(new Label(i, 1, names[i], blackWFFC));
+		// 第二行及后续行写入表头
+		for (int row = 0; row < headerRows.length; row++) {
+			String[] names = headerRows[row];
+			for (int i = 0; i < names.length; i++) {
+				if(StringUtil.isNotEmpty(names[i]) && names[i].contains("*")) {
+					sheet.addCell(new Label(i, row + 1, names[i], redWFFC));
+				} else {
+					sheet.addCell(new Label(i, row + 1, names[i] == null ? "" : names[i], blackWFFC));
+				}
 			}
 		}
 
 		// 其余行依次写入数据
-		int rowNum = 2;
+		int rowNum = 1 + headerRows.length;
 		for (int j = 0; j < objects.size(); j++) {
 			Object[] obj = objects.get(j);
 			for (int h = 0; h < obj.length; h++) {

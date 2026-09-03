@@ -70,13 +70,6 @@
                     </a-select>
                   </a-form-item>
                 </a-col>
-                <a-col :md="6" :sm="24" v-if="orgaTree.length">
-                  <a-form-item label="部门" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-tree-select style="width:100%" allow-clear :treeData="orgaTree"
-                                   v-model="queryParam.organizationId" placeholder="请选择部门">
-                    </a-tree-select>
-                  </a-form-item>
-                </a-col>
                 <a-col :md="6" :sm="24">
                   <a-form-item label="商品类别" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}" allow-clear
@@ -156,7 +149,7 @@
   import { JeecgListMixin } from '@/mixins/JeecgListMixin'
   import { getFormatDate, getPrevMonthFormatDate } from '@/utils/util'
   import {getAction} from '@/api/manage'
-  import {findBySelectOrgan, queryMaterialCategoryTreeList, getAllOrganizationTreeByUser} from '@/api/api'
+  import {findBySelectOrgan, queryMaterialCategoryTreeList} from '@/api/api'
   import JEllipsis from '@/components/jeecg/JEllipsis'
   import moment from 'moment'
   import Vue from 'vue'
@@ -184,7 +177,6 @@
           organId: undefined,
           materialParam:'',
           depotId: undefined,
-          organizationId: undefined,
           beginTime: getPrevMonthFormatDate(3),
           endTime: getFormatDate(),
           createTimeRange: [moment(getPrevMonthFormatDate(3)), moment(getFormatDate())],
@@ -196,7 +188,6 @@
         },
         organList: [],
         depotList: [],
-        orgaTree: [],
         categoryTree:[],
         numSumTotalStr: '0',
         priceSumTotalStr: '0',
@@ -205,7 +196,7 @@
         tabKey: "1",
         pageName: 'outMaterialCount',
         // 默认索引
-        defDataIndex:['rowIndex','issueDepartment','barCode','mName','standard','model','categoryName','materialUnit','numSum','priceSum'],
+        defDataIndex:['rowIndex','barCode','mName','standard','model','categoryName','materialUnit','numSum','priceSum'],
         // 默认列
         defColumns: [
           {
@@ -214,7 +205,6 @@
               return (t !== '合计') ? (parseInt(index) + 1) : t
             }
           },
-          {title: '领用部门', dataIndex: 'issueDepartment', width: 120, ellipsis:true},
           {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 120},
           {title: '名称', dataIndex: 'mName', width: 120, ellipsis:true},
           {title: '规格', dataIndex: 'standard', width: 100, ellipsis:true},
@@ -235,7 +225,6 @@
     created () {
       this.getDepotData()
       this.initOrgan()
-      this.loadAllOrgaData()
       this.loadCategoryTreeData()
       this.initColumnsSetting()
       this.loadCurrentRoleCode()
@@ -323,15 +312,6 @@
           }
         })
       },
-      loadAllOrgaData(){
-        let that = this
-        let params = {}
-        getAllOrganizationTreeByUser(params).then((res)=>{
-          if(res){
-            that.orgaTree = res
-          }
-        })
-      },
       loadCategoryTreeData(){
         let that = this;
         let params = {};
@@ -356,11 +336,11 @@
       exportExcel() {
         let list = []
         let quantityTitle = this.roleCode === 'ROLE_DEPT' ? '领用数量' : '出库数量'
-        let head = '领用部门,条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,' + quantityTitle + ',出库金额'
+        let head = '条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,' + quantityTitle + ',出库金额'
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
-          item.push(ds.issueDepartment, ds.barCode, ds.mName, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs,
+          item.push(ds.barCode, ds.mName, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs,
             ds.categoryName, ds.materialUnit, ds.numSum, ds.priceSum)
           list.push(item)
         }

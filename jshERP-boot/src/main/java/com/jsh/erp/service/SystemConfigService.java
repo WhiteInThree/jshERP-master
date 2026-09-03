@@ -666,14 +666,29 @@ public class SystemConfigService {
      * @throws Exception
      */
     public void exportExcelByParam(String title, String head, String tip, JSONArray arr, HttpServletResponse response) throws Exception {
-        List<String> nameList = StringUtil.strToStringList(head);
-        String[] names = StringUtil.listToStringArray(nameList);
+        String[][] headerRows;
+        if (head != null && head.contains("\n")) {
+            String[] lines = head.split("\\r?\\n", -1);
+            headerRows = new String[lines.length][];
+            int columnCount = 0;
+            for (int i = 0; i < lines.length; i++) {
+                headerRows[i] = lines[i].split(",", -1);
+                columnCount = Math.max(columnCount, headerRows[i].length);
+            }
+            for (int i = 0; i < headerRows.length; i++) {
+                headerRows[i] = java.util.Arrays.copyOf(headerRows[i], columnCount);
+            }
+        } else {
+            List<String> nameList = StringUtil.strToStringList(head);
+            headerRows = new String[][]{StringUtil.listToStringArray(nameList)};
+        }
+        int columnCount = headerRows.length > 0 ? headerRows[0].length : 0;
         List<Object[]> objects = new ArrayList<>();
         if (null != arr) {
             for (Object object: arr) {
                 List<Object> list = (List<Object>) object;
-                Object[] objs = new Object[names.length];
-                for (int i = 0; i < list.size(); i++) {
+                Object[] objs = new Object[columnCount];
+                for (int i = 0; i < list.size() && i < columnCount; i++) {
                     if(null != list.get(i)) {
                         objs[i] = list.get(i);
                     }
@@ -681,7 +696,7 @@ public class SystemConfigService {
                 objects.add(objs);
             }
         }
-        File file = ExcelUtils.exportObjectsOneSheet(fileExportTmp, title, tip, names, title, objects);
+        File file = ExcelUtils.exportObjectsOneSheet(fileExportTmp, title, tip, headerRows, title, objects);
         ExcelUtils.downloadExcel(file, file.getName(), response);
     }
 }

@@ -305,7 +305,8 @@ INSERT INTO `jsh_function` VALUES (260, '000113', '字典管理', '0001', '/syst
 INSERT INTO `jsh_function` VALUES (261, '050203', '请购单', '0502', '/bill/purchase_apply', '/bill/PurchaseApplyList', b'0', '0330', b'1', '电脑版', '1,2,3,7', 'profile', '0');
 INSERT INTO `jsh_function` VALUES (262, '0901', '预算管理', '0', '/budget', '/layouts/TabLayout', b'0', '0320', b'1', '电脑版', '', 'fund', '0');
 INSERT INTO `jsh_function` VALUES (263, '090101', '预算设置', '0901', '/budget/setting', '/budget/BudgetSetting', b'0', '090101', b'1', '电脑版', '1', 'profile', '0');
-INSERT INTO `jsh_function` VALUES (264, '030114', '预算统计', '0301', '/report/budget_report', '/report/BudgetReport', b'0', '0675', b'1', '电脑版', '', 'profile', '0');
+INSERT INTO `jsh_function` VALUES (264, '030114', '预算统计', '0301', '/report/budget_report', '/report/BudgetReport', b'0', '0618', b'1', '电脑版', '', 'profile', '0');
+INSERT INTO `jsh_function` VALUES (265, '030115', '领用数量汇总', '0301', '/report/receive_material_count', '/report/ReceiveMaterialCount', b'0', '0656', b'1', '电脑版', '', 'profile', '0');
 
 -- ----------------------------
 -- Table structure for jsh_in_out_item

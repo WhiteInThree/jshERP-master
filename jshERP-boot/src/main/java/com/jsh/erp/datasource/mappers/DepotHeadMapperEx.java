@@ -32,6 +32,8 @@ public interface DepotHeadMapperEx {
             @Param("endTime") String endTime,
             @Param("rows") Integer rows);
 
+    List<ReceiveMaterialCountVo> findReceiveMaterialCount(@Param("year") Integer year);
+
     OfficeDashboardVo getOfficeDashboardSummary(
             @Param("beginTime") String beginTime,
             @Param("endTime") String endTime);

@@ -3,30 +3,84 @@
     <a-col :md="24">
       <a-card :bordered="false">
         <div class="table-page-search-wrapper">
-          <a-form layout="inline">
-            <a-form-item label="预算年度">
-              <a-select v-model="year" style="width: 120px" @change="loadData">
-                <a-select-option v-for="item in yearOptions" :key="item" :value="item">
+          <a-row :gutter="16" type="flex" align="middle">
+
+            <!-- 年份 -->
+            <a-col>
+              <a-select
+                v-model="year"
+                style="width: 120px"
+                @change="loadData"
+                placeholder="选择年份"
+              >
+                <a-select-option
+                  v-for="item in yearOptions"
+                  :key="item"
+                  :value="item"
+                >
                   {{ item }}年
                 </a-select-option>
               </a-select>
-            </a-form-item>
-            <a-form-item label="部门">
-              <a-select v-model="organizationIds" mode="multiple" show-search allow-clear
-                optionFilterProp="children" :maxTagCount="2" style="width: 300px" placeholder="搜索或选择部门">
-                <a-select-option v-for="item in departmentOptions" :key="item.organizationId" :value="item.organizationId">
+            </a-col>
+
+            <!-- 部门 -->
+            <a-col>
+              <a-select
+                v-model="organizationIds"
+                mode="multiple"
+                show-search
+                allow-clear
+                optionFilterProp="children"
+                :maxTagCount="2"
+                style="width: 300px"
+                placeholder="搜索或选择部门"
+              >
+                <a-select-option
+                  v-for="item in departmentOptions"
+                  :key="item.organizationId"
+                  :value="item.organizationId"
+                >
                   {{ item.organizationName }}
                 </a-select-option>
               </a-select>
-            </a-form-item>
-            <a-form-item>
-              <a-button type="primary" icon="search" @click="loadData">查询</a-button>
-              <a-button style="margin-left: 8px" icon="reload" @click="resetQuery">重置</a-button>
-              <a-button style="margin-left: 8px" v-print="'#budgetReportPrint'" icon="printer">打印</a-button>
-            </a-form-item>
-          </a-form>
-        </div>
+            </a-col>
 
+            <!-- 操作按钮 -->
+            <a-col>
+              <a-space>
+                <a-button
+                  type="primary"
+                  icon="search"
+                  @click="loadData"
+                >
+                  查询
+                </a-button>
+
+                <a-button
+                  icon="reload"
+                  @click="resetQuery"
+                >
+                  重置
+                </a-button>
+
+                <a-button
+                  v-print="'#budgetReportPrint'"
+                  icon="printer"
+                >
+                  打印
+                </a-button>
+
+                <a-button
+                  icon="download"
+                  @click="exportReport"
+                >
+                  导出
+                </a-button>
+              </a-space>
+            </a-col>
+
+          </a-row>
+        </div>
         <section id="budgetReportPrint">
           <a-table bordered size="small" rowKey="organizationId" :loading="loading"
             :pagination="false" :dataSource="filteredData" :columns="columns" :scroll="{ x: 3150 }">
@@ -39,6 +93,7 @@
 
 <script>
 import { getBudgetStatistics } from '@/api/api'
+import { JeecgListMixin } from '@/mixins/JeecgListMixin'
 
 const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
 const moneyColumn = (title, dataIndex, width = 110) => ({
@@ -51,6 +106,7 @@ const moneyColumn = (title, dataIndex, width = 110) => ({
 
 export default {
   name: 'BudgetReport',
+  mixins: [JeecgListMixin],
   data () {
     const currentYear = new Date().getFullYear()
     return {
@@ -109,6 +165,20 @@ export default {
       this.organizationIds = []
       this.year = new Date().getFullYear()
       this.loadData()
+    },
+    exportReport () {
+      const head = ['部门', '期初（年度初始预算）']
+      monthNames.forEach(name => head.push(`${name}-上期结余`, `${name}-支出`))
+      head.push('支出合计', '年末结余数')
+      const list = this.filteredData.map(item => {
+        const row = [item.organizationName, item.initialBudget]
+        for (let index = 1; index <= 12; index++) {
+          row.push(item[`month${index}CarryOver`] || 0, item[`month${index}Expense`] || 0)
+        }
+        row.push(item.totalExpense || 0, item.yearEndBalance || 0)
+        return row
+      })
+      this.handleExportXlsPost('预算统计', '预算统计', head.join(','), `${this.year}年度预算统计`, list)
     }
   }
 }

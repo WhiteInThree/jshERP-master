@@ -1,30 +1,83 @@
 <template>
   <a-card :bordered="false">
     <div class="table-page-search-wrapper">
-      <a-form layout="inline">
-        <a-form-item label="年份">
-          <a-select v-model="year" style="width: 120px" @change="loadData">
-            <a-select-option v-for="item in yearOptions" :key="item" :value="item">{{ item }}年</a-select-option>
+      <a-row :gutter="16" type="flex" align="middle">
+        <!-- 年份 -->
+        <a-col>
+          <a-select
+            v-model="year"
+            style="width: 120px"
+            @change="loadData"
+            placeholder="选择年份"
+          >
+            <a-select-option
+              v-for="item in yearOptions"
+              :key="item"
+              :value="item"
+            >
+              {{ item }}年
+            </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item label="部门">
-          <a-select v-model="selectedOrganizations" mode="multiple" show-search allow-clear optionFilterProp="children"
-                    :maxTagCount="2" style="width: 300px" placeholder="搜索或选择已设置部门">
-            <a-select-option v-for="item in departmentOptions" :key="item.organizationId" :value="item.organizationId">
+        </a-col>
+
+        <!-- 部门 -->
+        <a-col>
+          <a-select
+            v-model="selectedOrganizations"
+            mode="multiple"
+            show-search
+            allow-clear
+            optionFilterProp="children"
+            :maxTagCount="2"
+            style="width: 300px"
+            placeholder="搜索或选择部门"
+          >
+            <a-select-option
+              v-for="item in departmentOptions"
+              :key="item.organizationId"
+              :value="item.organizationId"
+            >
               {{ item.organizationName }}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item>
-          <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader"
-                    :data="{year: year}" :action="importUrl" @change="handleImport">
-            <a-button icon="upload">导入</a-button>
-          </a-upload>
-          <a-button style="margin-left: 8px" icon="download" @click="exportReport">导出</a-button>
-          <a-button style="margin-left: 8px" icon="reload" @click="resetQuery">重置筛选</a-button>
-          <a-button style="margin-left: 8px" type="primary" icon="save" :loading="saving" :disabled="readOnly" @click="saveAll">保存设置</a-button>
-        </a-form-item>
-      </a-form>
+        </a-col>
+
+        <!-- 操作按钮 -->
+        <a-col>
+          <a-space>
+            <a-upload
+              name="file"
+              :showUploadList="false"
+              :multiple="false"
+              :headers="tokenHeader"
+              :data="{year: year}"
+              :action="importUrl"
+              @change="handleImport"
+            >
+              <a-button icon="upload">导入</a-button>
+            </a-upload>
+
+            <a-button icon="download" @click="exportReport">
+              导出
+            </a-button>
+
+            <a-button icon="reload" @click="resetQuery">
+              重置筛选
+            </a-button>
+
+            <a-button
+              type="primary"
+              icon="save"
+              :loading="saving"
+              :disabled="readOnly"
+              @click="saveAll"
+            >
+              保存设置
+            </a-button>
+          </a-space>
+        </a-col>
+
+      </a-row>
     </div>
 
     <a-row :gutter="16" style="margin: 16px 0">

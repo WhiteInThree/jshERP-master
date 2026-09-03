@@ -1004,6 +1004,16 @@ public class DepotHeadService {
         return list;
     }
 
+    public List<ReceiveMaterialCountVo> findReceiveMaterialCount(Integer year) throws Exception {
+        List<ReceiveMaterialCountVo> list = null;
+        try {
+            list = depotHeadMapperEx.findReceiveMaterialCount(year);
+        } catch (Exception e) {
+            JshException.readFail(logger, e);
+        }
+        return list;
+    }
+
     public int findInOutMaterialCountTotal(String beginTime, String endTime, String type, List<Long> categoryList,
                                            Boolean forceFlag, Boolean inOutManageFlag, String materialParam,
                                            List<Long> depotList, Long organizationId, Integer oId)throws Exception {

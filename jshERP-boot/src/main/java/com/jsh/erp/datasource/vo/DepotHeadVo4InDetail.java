@@ -8,6 +8,8 @@ public class DepotHeadVo4InDetail {
 
     private String number;
 
+    private Long materialId;
+
     private String barCode;
 
     private String mname;
@@ -66,6 +68,14 @@ public class DepotHeadVo4InDetail {
 
     public void setNumber(String number) {
         this.number = number;
+    }
+
+    public Long getMaterialId() {
+        return materialId;
+    }
+
+    public void setMaterialId(Long materialId) {
+        this.materialId = materialId;
     }
 
     public String getBarCode() {
