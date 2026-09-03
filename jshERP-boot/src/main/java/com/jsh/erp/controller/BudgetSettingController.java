@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/budget")
@@ -48,11 +47,4 @@ public class BudgetSettingController {
         return res;
     }
 
-    @PostMapping("/import")
-    public BaseResponseInfo importExcel(@RequestParam("file") MultipartFile file, @RequestParam Integer year) {
-        BaseResponseInfo res = new BaseResponseInfo();
-        try { res.code = service.importExcel(file, year) >= 0 ? 200 : 500; res.data = "导入成功"; }
-        catch (Exception e) { res.code = 500; res.data = e.getMessage(); }
-        return res;
-    }
 }

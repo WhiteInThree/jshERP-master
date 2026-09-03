@@ -16,10 +16,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import jxl.Sheet;
-import jxl.Workbook;
-import org.springframework.web.multipart.MultipartFile;
-import com.jsh.erp.utils.ExcelUtils;
 
 @Service
 public class BudgetSettingService {
@@ -79,31 +75,6 @@ public class BudgetSettingService {
             report.calculateBalances();
         }
         return new ArrayList<>(reportByOrganization.values());
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public int importExcel(MultipartFile file, Integer year) throws Exception {
-        checkAccess();
-        checkEditableYear(year);
-        if (file == null || file.isEmpty()) throw new IllegalArgumentException("请选择预算文件");
-        Workbook workbook = Workbook.getWorkbook(file.getInputStream());
-        try {
-            Sheet sheet = workbook.getSheet(0);
-            int result = 0;
-            Long tenantId = userService.getCurrentUser().getTenantId();
-            for (int i = 1; i < sheet.getRows(); i++) {
-                String name = ExcelUtils.getContent(sheet, i, 0);
-                String amount = ExcelUtils.getContent(sheet, i, 1);
-                if (name == null || name.trim().isEmpty()) continue;
-                BudgetSetting setting = new BudgetSetting();
-                setting.setBudgetYear(year);
-                setting.setOrganizationId(mapper.findOrganizationId(name.trim(), tenantId));
-                if (setting.getOrganizationId() == null) throw new IllegalArgumentException("部门不存在：" + name);
-                setting.setBudgetAmount(new BigDecimal(amount == null || amount.trim().isEmpty() ? "0" : amount.trim()));
-                result += saveSetting(setting);
-            }
-            return result;
-        } finally { workbook.close(); }
     }
 
     private int saveSetting(BudgetSetting setting) throws Exception {

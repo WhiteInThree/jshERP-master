@@ -45,18 +45,6 @@
         <!-- 操作按钮 -->
         <a-col>
           <a-space>
-            <a-upload
-              name="file"
-              :showUploadList="false"
-              :multiple="false"
-              :headers="tokenHeader"
-              :data="{year: year}"
-              :action="importUrl"
-              @change="handleImport"
-            >
-              <a-button icon="upload">导入</a-button>
-            </a-upload>
-
             <a-button icon="download" @click="exportReport">
               导出
             </a-button>
@@ -86,19 +74,18 @@
       <a-col :md="8" :sm="24"><a-statistic title="年度可用预算" :value="summary.availableAmount" :precision="2" suffix="元" /></a-col>
     </a-row>
 
-    <a-table bordered rowKey="organizationId" size="middle" :loading="loading" :pagination="false" :dataSource="filteredData" :columns="columns">
+    <a-table bordered rowKey="organizationId" size="middle" :loading="loading" :pagination="pagination" :dataSource="filteredData" :columns="columns" :scroll="{y: 350}">
       <template slot="budgetAmount" slot-scope="text, record">
         <a-input-number v-model="record.budgetAmount" :min="0" :precision="2" :step="1000" :disabled="readOnly" style="width: 160px" />
       </template>
       <template slot="money" slot-scope="text">{{ formatMoney(text) }}</template>
     </a-table>
+
   </a-card>
 </template>
 
 <script>
 import { getBudgetSettingList, saveBudgetSetting } from '@/api/api'
-import { ACCESS_TOKEN } from '@/store/mutation-types'
-import Vue from 'vue'
 import { JeecgListMixin } from '@/mixins/JeecgListMixin'
 
 export default {
@@ -120,7 +107,6 @@ export default {
       ],
       currentYear,
       yearOptions: Array.from({ length: currentYear - 2026 + 2 }, (_, index) => currentYear + 1 - index)
-      ,tokenHeader: {'X-Access-Token': Vue.ls.get(ACCESS_TOKEN)}
     }
   },
   computed: {
@@ -138,18 +124,14 @@ export default {
       if (!this.selectedOrganizations.length) return this.dataSource
       return this.dataSource.filter(item => this.selectedOrganizations.indexOf(item.organizationId) !== -1)
     },
-    importUrl () { return `${window._CONFIG['domianURL']}/budget/import` }
+    pagination () {
+      return { pageSize: 10, pageSizeOptions: ['10', '20', '50', '100', '200', '500'], showSizeChanger: true, showQuickJumper: true, showTotal: total => `共 ${total} 条` }
+    }
   },
   mounted () {
     this.loadData()
   },
   methods: {
-    handleImport (info) {
-      if (info.file.status === 'done') {
-        if (info.file.response && info.file.response.code === 200) { this.$message.success('预算导入成功'); this.loadData() }
-        else this.$message.error((info.file.response && info.file.response.data) || '预算导入失败')
-      } else if (info.file.status === 'error') this.$message.error('预算导入失败')
-    },
     exportReport () {
       const head = '部门,年度预算,已用预算,可用预算'
       const list = this.filteredData.map(item => [item.organizationName, item.budgetAmount, item.usedAmount, item.availableAmount])

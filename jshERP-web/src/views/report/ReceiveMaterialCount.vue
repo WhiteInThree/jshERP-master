@@ -23,8 +23,8 @@
           </a-row>
         </div>
         <section id="receiveMaterialCountPrint">
-          <a-table bordered size="small" rowKey="materialId" :loading="loading" :pagination="false"
-            :dataSource="filteredData" :columns="columns" :scroll="{ x: 1500 }" />
+          <a-table bordered size="small" rowKey="materialId" :loading="loading" :pagination="pagination"
+            :dataSource="filteredData" :columns="columns" :scroll="{ x: 1500, y: 450}" />
         </section>
       </a-card>
     </a-col>
@@ -64,6 +64,9 @@ export default {
       const keyword = (this.materialName || '').trim().toLowerCase()
       if (!keyword) return this.dataSource
       return this.dataSource.filter(item => (item.mName || '').toLowerCase().indexOf(keyword) !== -1)
+    },
+    pagination () {
+      return { pageSize: 10, pageSizeOptions: ['10', '20', '50', '100', '200', '500'], showSizeChanger: true, showQuickJumper: true, showTotal: total => `共 ${total} 条` }
     }
   },
   methods: {

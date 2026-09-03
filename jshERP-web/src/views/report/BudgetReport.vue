@@ -83,7 +83,7 @@
         </div>
         <section id="budgetReportPrint">
           <a-table bordered size="small" rowKey="organizationId" :loading="loading"
-            :pagination="false" :dataSource="filteredData" :columns="columns" :scroll="{ x: 3150 }">
+            :pagination="pagination" :dataSource="filteredData" :columns="columns" :scroll="{ x: 3150, y: 400 }">
           </a-table>
         </section>
       </a-card>
@@ -142,6 +142,9 @@ export default {
     filteredData () {
       if (!this.organizationIds.length) return this.dataSource
       return this.dataSource.filter(item => this.organizationIds.indexOf(item.organizationId) !== -1)
+    },
+    pagination () {
+      return { pageSize: 10, pageSizeOptions: ['10', '20', '50', '100', '200', '500'], showSizeChanger: true, showQuickJumper: true, showTotal: total => `共 ${total} 条` }
     }
   },
   mounted () {

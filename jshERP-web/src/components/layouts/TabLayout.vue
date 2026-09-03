@@ -41,6 +41,7 @@
   import { mixin, mixinDevice } from '@/utils/mixin.js'
   import { triggerWindowResizeEvent } from '@/utils/util'
   const indexKey = '/dashboard/analysis'
+  const maxOpenPages = 11
   import Vue from 'vue'
   import { CACHE_INCLUDED_ROUTES } from "@/store/mutation-types"
   import store from '../../store'
@@ -121,13 +122,17 @@
     watch: {
       '$route': function(newRoute) {
         // console.log("新的路由",newRoute)
-        this.activePage = newRoute.fullPath
         if (!this.multipage) {
           this.linkList = [newRoute.fullPath]
           this.pageList = [Object.assign({},newRoute)]
         } else if(indexKey==newRoute.fullPath) {
           //首页时 直接刷新
         }else if (this.linkList.indexOf(newRoute.fullPath) < 0) {
+          if (this.pageList.length >= maxOpenPages) {
+            this.$message.warning('最多同时打开11个菜单，请先关闭其他菜单')
+            this.$router.push(this.activePage || indexKey)
+            return
+          }
           this.linkList.push(newRoute.fullPath)
           this.pageList.push(Object.assign({},newRoute))
         } else if (this.linkList.indexOf(newRoute.fullPath) >= 0) {
@@ -135,6 +140,9 @@
           let oldPositionRoute = this.pageList[oldIndex]
           this.pageList.splice(oldIndex, 1, Object.assign({},newRoute,{meta:oldPositionRoute.meta}))
         }
+        this.activePage = newRoute.fullPath
+        // 判断当前路由是否iframe页
+        this.isOpenIframePage()
       },
       'activePage': function(key) {
         let index = this.linkList.lastIndexOf(key)
@@ -153,10 +161,6 @@
         if (this.multipage && this.linkList.indexOf(indexKey) === -1) {
           this.addIndexToFirst()
         }
-      },
-      $route() {
-        // 判断当前路由是否iframe页
-        this.isOpenIframePage()
       }
     },
     methods: {
@@ -357,6 +361,10 @@
           }
         } else {
           //打开新的页签
+          if (this.pageList.length >= maxOpenPages) {
+            this.$message.warning('最多同时打开11个菜单，请先关闭其他菜单')
+            return
+          }
           if(component) {
             let index = component.lastIndexOf("\/");
             component = component.substring(index + 1, component.length);
