@@ -140,6 +140,7 @@
   import JDate from '@/components/jeecg/JDate'
   import Vue from 'vue'
   import WaitBillList from '../dialog/WaitBillList'
+  import { getBudgetByOrganization } from '@/api/api'
   export default {
     name: "OtherOutModal",
     mixins: [JEditableTableMixin, BillModalMixin],
@@ -368,8 +369,29 @@
         }
       },
       handleConfirmIssue() {
-        this.billStatus = '1'
-        this.handleOk()
+        const total = this.materialTable.dataSource.reduce((sum, item) => sum + Number(item.allPrice || 0), 0)
+        const organizationId = this.transferParam && this.transferParam.organizationId
+        if (!organizationId || total <= 0) {
+          this.billStatus = '1'
+          this.handleOk()
+          return
+        }
+        getBudgetByOrganization({ year: new Date().getFullYear(), organizationId }).then(res => {
+          const budget = res && res.code === 200 ? res.data : null
+          const available = Number(budget && budget.availableAmount || 0)
+          if (total > available) {
+            this.$confirm({
+              title: '当前部门可用预算不足，是否确认发放？',
+              content: `本次发放金额 ${total.toFixed(2)} 元，可用预算 ${available.toFixed(2)} 元。`,
+              onOk: () => { this.billStatus = '1'; this.handleOk() }
+            })
+          } else {
+            this.billStatus = '1'
+            this.handleOk()
+          }
+        }).catch(() => {
+          this.$message.error('预算信息获取失败，无法确认发放')
+        })
       },
       handleOkOnly() {
         this.billStatus = this.issueMode ? '1' : '0'

@@ -10,6 +10,7 @@ const getBudgetSettingList = (params)=>getAction("/budget/list",params);
 const saveBudgetSetting = (params)=>postAction("/budget/save",params);
 const saveBudgetSettingBatch = (params)=>postAction("/budget/saveBatch",params);
 const getBudgetStatistics = (params)=>getAction("/budget/report",params);
+const getBudgetByOrganization = (params)=>getAction("/budget/organization",params);
 const getReceiveMaterialCount = (params)=>getAction("/depotHead/findReceiveMaterialCount",params);
 //租户管理
 const checkTenant = (params)=>getAction("/tenant/checkIsNameExist",params);
@@ -139,6 +140,7 @@ export {
   saveBudgetSetting,
   saveBudgetSettingBatch,
   getBudgetStatistics,
+  getBudgetByOrganization,
   getReceiveMaterialCount,
   buyOrSalePrice,
   checkTenant,

@@ -47,4 +47,12 @@ public class BudgetSettingController {
         return res;
     }
 
+    @GetMapping("/organization")
+    public BaseResponseInfo organization(@RequestParam Integer year, @RequestParam Long organizationId) {
+        BaseResponseInfo res = new BaseResponseInfo();
+        try { res.code = 200; res.data = service.findByOrganization(year, organizationId); }
+        catch (Exception e) { res.code = 500; res.data = e.getMessage(); }
+        return res;
+    }
+
 }

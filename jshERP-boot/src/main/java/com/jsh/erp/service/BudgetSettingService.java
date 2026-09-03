@@ -77,6 +77,12 @@ public class BudgetSettingService {
         return new ArrayList<>(reportByOrganization.values());
     }
 
+    public BudgetSettingVo findByOrganization(Integer year, Long organizationId) throws Exception {
+        checkAccess();
+        checkYearInRange(year);
+        return mapper.findByOrganization(year, organizationId, userService.getCurrentUser().getTenantId());
+    }
+
     private int saveSetting(BudgetSetting setting) throws Exception {
         if (setting.getBudgetYear() == null || setting.getOrganizationId() == null) {
             throw new IllegalArgumentException("预算年度和部门不能为空");

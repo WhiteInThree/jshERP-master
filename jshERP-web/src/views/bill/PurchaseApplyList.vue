@@ -339,6 +339,7 @@
               list: res.data.rows,
               number: info.number,
               departmentName: info.issueDepartment,
+              organizationId: info.organId,
               remark: info.remark
             }
             issueModal.defaultDepotId = this.defaultDepotId

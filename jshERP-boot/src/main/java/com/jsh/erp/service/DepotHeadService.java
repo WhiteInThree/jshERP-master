@@ -8,6 +8,7 @@ import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.mappers.DepotHeadMapper;
 import com.jsh.erp.datasource.mappers.DepotHeadMapperEx;
 import com.jsh.erp.datasource.mappers.DepotItemMapperEx;
+import com.jsh.erp.datasource.mappers.BudgetSettingMapper;
 import com.jsh.erp.datasource.vo.*;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
@@ -81,6 +82,8 @@ public class DepotHeadService {
     @Resource
     DepotItemMapperEx depotItemMapperEx;
     @Resource
+    BudgetSettingMapper budgetSettingMapper;
+    @Resource
     private LogService logService;
 
     @Value(value="${file.exportTmp}")
@@ -117,6 +120,7 @@ public class DepotHeadService {
         Map<String, Object> result = new HashMap<>();
         result.put("summary", summary == null ? new OfficeDashboardVo() : summary);
         result.put("stockWarnings", depotItemMapperEx.getOfficeDashboardStockWarnings(5));
+        result.put("budgetWarnings", budgetSettingMapper.findWarnings(java.time.Year.now().getValue(), userService.getCurrentUser().getTenantId()));
         result.put("departmentRanking", depotHeadMapperEx.getOfficeDepartmentRanking(beginTime, endTime));
         return result;
     }

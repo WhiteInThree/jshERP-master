@@ -15,28 +15,16 @@
     <a-spin :spinning="loading">
       <section class="dashboard-grid">
         <article class="dashboard-panel todo-panel">
-          <panel-title index="01" title="待办事项" note="需要办公室处理" />
-          <div class="todo-list">
-            <div class="todo-item todo-review">
-              <span class="todo-icon"><a-icon type="audit" /></span>
-              <div>
-                <span>待审核申请</span>
-                <small>等待审核确认</small>
-              </div>
-              <strong>{{ summary.pendingApplyCount || 0 }}</strong>
-            </div>
-            <div class="todo-item todo-issue">
-              <span class="todo-icon"><a-icon type="export" /></span>
-              <div>
-                <span>待发放申请</span>
-                <small>已审核，等待发放</small>
-              </div>
-              <strong>{{ summary.pendingIssueCount || 0 }}</strong>
+          <panel-title index="01" title="可用预算预警" note="低于年度预算 20%" />
+          <div v-if="budgetWarnings.length" class="warning-table">
+            <div class="warning-head"><span>部门</span><span>年度预算</span><span>可用预算</span></div>
+            <div v-for="item in budgetWarnings" :key="item.organizationId" class="warning-row">
+              <div><strong>{{ item.organizationName }}</strong><small>即将用尽</small></div>
+              <span>{{ formatMoney(item.budgetAmount) }}</span>
+              <span class="current-stock">{{ formatMoney(item.availableAmount) }}</span>
             </div>
           </div>
-          <div class="todo-footnote">
-            <a-icon type="info-circle" /> 待办数量随申请审核和确认发放实时更新
-          </div>
+          <a-empty v-else description="暂无可用预算预警" />
         </article>
 
         <article class="dashboard-panel warning-panel">
@@ -146,6 +134,7 @@
           totalIssueAmount: 0
         },
         stockWarnings: [],
+        budgetWarnings: [],
         departmentRanking: []
       }
     },
@@ -172,6 +161,7 @@
             const data = res.data || {}
             this.summary = Object.assign({}, this.summary, data.summary || {})
             this.stockWarnings = data.stockWarnings || []
+            this.budgetWarnings = data.budgetWarnings || []
             this.departmentRanking = data.departmentRanking || []
           } else {
             this.$message.warning('办公室首页数据加载失败')
