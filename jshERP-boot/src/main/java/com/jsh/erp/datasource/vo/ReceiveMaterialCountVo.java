@@ -19,8 +19,8 @@ public class ReceiveMaterialCountVo {
 
     public Long getMaterialId() { return materialId; }
     public void setMaterialId(Long materialId) { this.materialId = materialId; }
-    public String getMName() { return mName; }
-    public void setMName(String mName) { this.mName = mName; }
+    public String getmName() { return mName; }
+    public void setmName(String mName) { this.mName = mName; }
     public String getMaterialUnit() { return materialUnit; }
     public void setMaterialUnit(String materialUnit) { this.materialUnit = materialUnit; }
 

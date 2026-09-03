@@ -10,6 +10,9 @@
               </a-select>
             </a-col>
             <a-col>
+              <a-input v-model="materialName" allow-clear style="width: 220px" placeholder="搜索物品名称" @pressEnter="loadData" />
+            </a-col>
+            <a-col>
               <a-space>
                 <a-button type="primary" icon="search" @click="loadData">查询</a-button>
                 <a-button icon="reload" @click="resetQuery">重置</a-button>
@@ -21,7 +24,7 @@
         </div>
         <section id="receiveMaterialCountPrint">
           <a-table bordered size="small" rowKey="materialId" :loading="loading" :pagination="false"
-            :dataSource="dataSource" :columns="columns" :scroll="{ x: 1500 }" />
+            :dataSource="filteredData" :columns="columns" :scroll="{ x: 1500 }" />
         </section>
       </a-card>
     </a-col>
@@ -41,6 +44,7 @@ export default {
     const currentYear = new Date().getFullYear()
     return {
       year: currentYear,
+      materialName: '',
       yearOptions: Array.from({ length: currentYear - 2026 + 2 }, (_, index) => currentYear + 1 - index),
       loading: false,
       dataSource: [],
@@ -55,6 +59,13 @@ export default {
   mounted () {
     this.loadData()
   },
+  computed: {
+    filteredData () {
+      const keyword = (this.materialName || '').trim().toLowerCase()
+      if (!keyword) return this.dataSource
+      return this.dataSource.filter(item => (item.mName || '').toLowerCase().indexOf(keyword) !== -1)
+    }
+  },
   methods: {
     loadData () {
       this.loading = true
@@ -65,11 +76,12 @@ export default {
     },
     resetQuery () {
       this.year = new Date().getFullYear()
+      this.materialName = ''
       this.loadData()
     },
     exportReport () {
       const head = ['序号', '名称', ...monthNames, '合计']
-      const list = this.dataSource.map((item, index) => [index + 1, item.mName, ...monthNames.map((_, month) => item[`month${month + 1}`] || 0), item.total || 0])
+      const list = this.filteredData.map((item, index) => [index + 1, item.mName, ...monthNames.map((_, month) => item[`month${month + 1}`] || 0), item.total || 0])
       this.handleExportXlsPost('领用数量汇总', '领用数量汇总', head.join(','), `${this.year}年度领用数量汇总`, list)
     }
   }

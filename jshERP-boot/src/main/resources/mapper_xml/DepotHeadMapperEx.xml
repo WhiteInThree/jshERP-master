@@ -150,7 +150,7 @@
         left join jsh_user u on u.id=apply_dh.creator and ifnull(u.delete_flag,'0') !='1'
         left join (select user_id, min(orga_id) orga_id from jsh_orga_user_rel
             where ifnull(delete_flag,'0') !='1' group by user_id) r on r.user_id=apply_dh.creator
-        left join jsh_organization o on o.id=r.orga_id and ifnull(o.delete_flag,'0') !='1'
+        left join jsh_organization o on o.id=ifnull(apply_dh.organ_id, r.orga_id) and ifnull(o.delete_flag,'0') !='1'
         where issue_dh.type='出库' and issue_dh.sub_type='其它'
             and issue_dh.oper_time &gt;=#{beginTime} and issue_dh.oper_time &lt;=#{endTime}
             and ifnull(issue_dh.delete_flag,'0') !='1'
