@@ -119,7 +119,7 @@ export default {
       }, { budgetAmount: 0, usedAmount: 0, availableAmount: 0 })
     },
     readOnly () { return this.year < this.currentYear },
-    departmentOptions () { return this.dataSource.filter(item => item.id != null) },
+    departmentOptions () { return this.dataSource.filter(item => item.organizationId != null) },
     filteredData () {
       if (!this.selectedOrganizations.length) return this.dataSource
       return this.dataSource.filter(item => this.selectedOrganizations.indexOf(item.organizationId) !== -1)
@@ -177,11 +177,12 @@ export default {
           organizationId: item.organizationId,
           budgetAmount: Number(item.budgetAmount || 0)
         })))
-        if (responses.some(res => res.code !== 200)) throw new Error('save failed')
+        const failedResponse = responses.find(res => res.code !== 200)
+        if (failedResponse) throw new Error(failedResponse.data || failedResponse.message || 'save failed')
         this.$message.success('预算设置已保存')
         this.loadData()
       } catch (e) {
-        this.$message.error('预算设置保存失败')
+        this.$message.error(e.message || '预算设置保存失败')
       } finally {
         this.saving = false
       }

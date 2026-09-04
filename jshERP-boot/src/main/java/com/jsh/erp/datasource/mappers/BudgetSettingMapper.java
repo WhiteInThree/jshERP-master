@@ -17,7 +17,7 @@ public interface BudgetSettingMapper {
             "join jsh_depot_head a on a.number=dh.link_number and a.type='其它' and a.sub_type='请购单' and a.status='4' and ifnull(a.delete_flag,'0')!='1' " +
             "where dh.type='出库' and dh.sub_type='其它' and ifnull(dh.delete_flag,'0')!='1' " +
             "and dh.tenant_id=#{tenantId} and year(dh.oper_time)=#{year} group by a.organ_id) u on u.organization_id=o.id " +
-            "where o.tenant_id=#{tenantId} and ifnull(o.delete_flag,'0')!='1' and o.parent_id is not null " +
+            "where o.tenant_id=#{tenantId} and ifnull(o.delete_flag,'0')!='1' " +
             "and (#{name} is null or #{name}='' or o.org_abr like concat('%',#{name},'%')) order by o.sort,o.id")
     List<BudgetSettingVo> list(@Param("year") Integer year, @Param("tenantId") Long tenantId, @Param("name") String name);
 
@@ -30,7 +30,9 @@ public interface BudgetSettingMapper {
     @Select("select * from jsh_budget_setting where budget_year=#{year} and organization_id=#{organizationId} and tenant_id=#{tenantId} and ifnull(delete_flag,'0')!='1' limit 1")
     BudgetSetting find(@Param("year") Integer year, @Param("organizationId") Long organizationId, @Param("tenantId") Long tenantId);
 
-    @Insert("insert into jsh_budget_setting(budget_year,organization_id,budget_amount,tenant_id,delete_flag,create_time,update_time) values(#{budgetYear},#{organizationId},#{budgetAmount},#{tenantId},'0',now(),now())")
+    // tenant_id is appended by the global MyBatis-Plus tenant interceptor.
+    // Keeping it out of this SQL avoids duplicate tenant_id columns on insert.
+    @Insert("insert into jsh_budget_setting(budget_year,organization_id,budget_amount,delete_flag,create_time,update_time) values(#{budgetYear},#{organizationId},#{budgetAmount},'0',now(),now())")
     int insert(BudgetSetting setting);
 
     @Update("update jsh_budget_setting set budget_amount=#{budgetAmount},update_time=now() where id=#{id} and tenant_id=#{tenantId}")

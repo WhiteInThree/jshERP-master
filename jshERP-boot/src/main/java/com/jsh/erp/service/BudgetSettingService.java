@@ -87,6 +87,9 @@ public class BudgetSettingService {
         if (setting.getBudgetYear() == null || setting.getOrganizationId() == null) {
             throw new IllegalArgumentException("预算年度和部门不能为空");
         }
+        if (mapper.findByOrganization(setting.getBudgetYear(), setting.getOrganizationId(), userService.getCurrentUser().getTenantId()) == null) {
+            throw new IllegalArgumentException("部门不存在或不属于当前租户");
+        }
         checkEditableYear(setting.getBudgetYear());
         if (setting.getBudgetAmount() == null || setting.getBudgetAmount().compareTo(BigDecimal.ZERO) < 0) {
             setting.setBudgetAmount(BigDecimal.ZERO);
