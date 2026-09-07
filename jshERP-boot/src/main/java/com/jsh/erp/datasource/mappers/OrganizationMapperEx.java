@@ -21,6 +21,8 @@ public interface OrganizationMapperEx {
     List<TreeNode> getNodeTree(@Param("currentId")Long currentId);
     List<TreeNode> getNextNodeTree(Map<String, Object> parameterMap);
 
+    List<Organization> getDepartmentListByUser();
+
     int addOrganization(Organization org);
 
     List <Organization> getOrganizationByParentIds(@Param("ids") String ids[]);

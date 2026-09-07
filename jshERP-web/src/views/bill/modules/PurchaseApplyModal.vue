@@ -117,7 +117,7 @@
   import { getMpListShort, changeListFmtMinus,handleIntroJs } from "@/utils/util"
   import JUpload from '@/components/jeecg/JUpload'
   import JDate from '@/components/jeecg/JDate'
-  import { getAllOrganizationTreeByUser } from '@/api/api'
+  import { getDepartmentListByUser } from '@/api/api'
   import Vue from 'vue'
   export default {
     name: "PurchaseApplyModal",
@@ -307,9 +307,15 @@
         this.$refs.historyBillListModalForm.disableSubmit = false;
       },
       loadAllOrgaData() {
-        getAllOrganizationTreeByUser({}).then(res => {
-          if (res) {
-            this.orgaTree = res
+        getDepartmentListByUser({}).then(res => {
+          const list = Array.isArray(res) ? res : (res && res.data) || []
+          if (list.length) {
+            this.orgaTree = list.map(item => ({
+              id: item.id,
+              key: item.id,
+              value: item.id,
+              title: item.orgAbr
+            }))
           }
         })
       },

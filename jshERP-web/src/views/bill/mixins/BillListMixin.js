@@ -811,6 +811,11 @@ export const BillListMixin = {
           if (res.data.length === 1) {
             this.defaultDepotId = res.data[0].id+''
           } else {
+            const warehouseOne = res.data.find(item => item.depotName === '仓库1')
+            if (warehouseOne) {
+              this.defaultDepotId = warehouseOne.id + ''
+              return
+            }
             for (let i = 0; i < res.data.length; i++) {
               if(res.data[i].isDefault){
                 this.defaultDepotId = res.data[i].id+''

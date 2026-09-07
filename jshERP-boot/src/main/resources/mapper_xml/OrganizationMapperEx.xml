@@ -49,6 +49,13 @@
         and ifnull(delete_flag,'0') !='1'
         order by sort asc
     </select>
+
+    <select id="getDepartmentListByUser" resultMap="com.jsh.erp.datasource.mappers.OrganizationMapper.BaseResultMap">
+        select * from jsh_organization
+        where parent_id is not null
+        and ifnull(delete_flag,'0') != '1'
+        order by sort asc, id asc
+    </select>
     <insert id="addOrganization" parameterType="com.jsh.erp.datasource.entities.Organization"
             useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         insert into jsh_organization

@@ -292,6 +292,17 @@
           }
         })
       },
+      resolveIssueDefaultDepot() {
+        if (this.defaultDepotId) return Promise.resolve(this.defaultDepotId)
+        return getAction('/depot/findDepotByCurrentUser').then(res => {
+          const depots = res && res.code === 200 ? (res.data || []) : []
+          if (depots.length === 1) return String(depots[0].id)
+          const warehouseOne = depots.find(item => item.depotName === '仓库1')
+          if (warehouseOne) return String(warehouseOne.id)
+          const defaultDepot = depots.find(item => item.isDefault)
+          return defaultDepot ? String(defaultDepot.id) : ''
+        })
+      },
       applyBudget(rows) {
         if (!rows || !rows.length) return
         rows.forEach(row => {
@@ -330,7 +341,10 @@
           mpList: '',
           linkType: 'basic'
         }
-        getAction('/depotItem/getDetailList', params).then((res) => {
+        Promise.all([
+          getAction('/depotItem/getDetailList', params),
+          this.resolveIssueDefaultDepot()
+        ]).then(([res, defaultDepotId]) => {
           if(res && res.code === 200) {
             const issueModal = this.$refs.issueModalForm
             issueModal.action = 'add'
@@ -340,9 +354,10 @@
               number: info.number,
               departmentName: info.issueDepartment,
               organizationId: info.organId,
-              remark: info.remark
+              remark: info.remark,
+              defaultDepotId: defaultDepotId
             }
-            issueModal.defaultDepotId = this.defaultDepotId
+            issueModal.defaultDepotId = defaultDepotId
             issueModal.add()
             issueModal.title = '确认发放'
           }

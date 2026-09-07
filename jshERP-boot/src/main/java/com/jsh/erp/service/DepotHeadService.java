@@ -68,6 +68,8 @@ public class DepotHeadService {
     @Resource
     private OrgaUserRelService orgaUserRelService;
     @Resource
+    private OrganizationService organizationService;
+    @Resource
     private PersonService personService;
     @Resource
     private AccountService accountService;
@@ -361,7 +363,8 @@ public class DepotHeadService {
         return !userService.isAdminOrOfficeUser(user);
     }
 
-    private void checkDepartmentPurchaseApplyCreate(User user, DepotHead depotHead) {
+    private void checkDepartmentPurchaseApplyCreate(User user, DepotHead depotHead) throws Exception {
+        checkPurchaseApplyOrganization(depotHead);
         if(!isDepartmentLimitedUser(user)) {
             return;
         }
@@ -371,6 +374,21 @@ public class DepotHeadService {
         }
         if(BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
             throwDepartmentPermissionException();
+        }
+    }
+
+    private void checkPurchaseApplyOrganization(DepotHead depotHead) throws Exception {
+        if (!BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())) {
+            return;
+        }
+        if (depotHead.getOrganId() == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_EDIT_FAILED_CODE,
+                    "领用申请必须选择实际部门");
+        }
+        Organization organization = organizationService.getOrganization(depotHead.getOrganId());
+        if (organization == null || organization.getParentId() == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_EDIT_FAILED_CODE,
+                    "领用申请只能选择有上级部门的实际部门");
         }
     }
 
@@ -1335,6 +1353,7 @@ public class DepotHeadService {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
                     ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_STATUS_MSG);
         }
+        checkPurchaseApplyOrganization(purchaseApply);
 
         DepotHeadExample example = new DepotHeadExample();
         example.createCriteria().andLinkNumberEqualTo(purchaseApply.getNumber())

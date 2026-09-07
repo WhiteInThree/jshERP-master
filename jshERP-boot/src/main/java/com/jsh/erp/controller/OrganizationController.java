@@ -184,4 +184,10 @@ public class OrganizationController {
         }
         return arr;
     }
+
+    @GetMapping(value = "/getDepartmentListByUser")
+    @ApiOperation(value = "获取可用于领用和预算的部门")
+    public List<Organization> getDepartmentListByUser() throws Exception {
+        return organizationService.getDepartmentListByUser();
+    }
 }

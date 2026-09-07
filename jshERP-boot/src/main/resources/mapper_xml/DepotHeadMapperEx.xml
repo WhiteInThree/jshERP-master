@@ -211,6 +211,12 @@
         <result column="issueDepartment" jdbcType="VARCHAR" property="issueDepartment" />
         <result column="numSum" jdbcType="DECIMAL" property="numSum" />
         <result column="priceSum" jdbcType="DECIMAL" property="priceSum" />
+        <result column="branchNumSum" jdbcType="DECIMAL" property="branchNumSum" />
+        <result column="branchPriceSum" jdbcType="DECIMAL" property="branchPriceSum" />
+        <result column="officeNumSum" jdbcType="DECIMAL" property="officeNumSum" />
+        <result column="officePriceSum" jdbcType="DECIMAL" property="officePriceSum" />
+        <result column="summaryNumSum" jdbcType="DECIMAL" property="summaryNumSum" />
+        <result column="summaryPriceSum" jdbcType="DECIMAL" property="summaryPriceSum" />
     </resultMap>
 
     <sql id="IssueDepartmentByLinkJoins">
@@ -219,6 +225,7 @@
         left join (select user_id, min(orga_id) orga_id from jsh_orga_user_rel
             where ifnull(delete_flag,'0') !='1' group by user_id) issue_rel on issue_rel.user_id=apply_dh.creator
         left join jsh_organization issue_org on issue_org.id=ifnull(apply_dh.organ_id,issue_rel.orga_id) and ifnull(issue_org.delete_flag,'0') !='1'
+        left join jsh_organization issue_parent_org on issue_parent_org.id=issue_org.parent_id and ifnull(issue_parent_org.delete_flag,'0') !='1'
     </sql>
 
     <sql id="CreatorOrIssueDepartmentCondition">
@@ -622,7 +629,13 @@
         select di.material_id materialId, me.bar_code barCode, m.name mName,m.model,m.standard,m.color,m.brand,m.mfrs,
                mc.name categoryName,concat_ws('', m.unit, u.basic_unit) materialUnit,
         sum(di.basic_number) numSum,
-        sum(di.all_price) priceSum
+        sum(di.all_price) priceSum,
+        sum(case when issue_org.parent_id = 10 or issue_parent_org.org_abr = '分局' then di.basic_number else 0 end) branchNumSum,
+        sum(case when issue_org.parent_id = 10 or issue_parent_org.org_abr = '分局' then di.all_price else 0 end) branchPriceSum,
+        sum(case when issue_org.parent_id = 20 or issue_parent_org.org_abr = '机关科室' then di.basic_number else 0 end) officeNumSum,
+        sum(case when issue_org.parent_id = 20 or issue_parent_org.org_abr = '机关科室' then di.all_price else 0 end) officePriceSum,
+        sum(case when issue_org.parent_id in (10,20) or issue_parent_org.org_abr in ('分局','机关科室') then di.basic_number else 0 end) summaryNumSum,
+        sum(case when issue_org.parent_id in (10,20) or issue_parent_org.org_abr in ('分局','机关科室') then di.all_price else 0 end) summaryPriceSum
         from jsh_depot_head dh
         left join jsh_depot_item di on dh.id=di.header_id and ifnull(di.delete_flag,'0') !='1'
         left join jsh_material m on m.id=di.material_id and ifnull(m.delete_flag,'0') !='1'

@@ -30,6 +30,18 @@ public class DepotHeadVo4InOutMCount {
 
     private BigDecimal priceSum;
 
+    private BigDecimal branchNumSum;
+
+    private BigDecimal branchPriceSum;
+
+    private BigDecimal officeNumSum;
+
+    private BigDecimal officePriceSum;
+
+    private BigDecimal summaryNumSum;
+
+    private BigDecimal summaryPriceSum;
+
     private Long tenantId;
 
     public Long getMaterialId() {
@@ -135,6 +147,19 @@ public class DepotHeadVo4InOutMCount {
     public void setPriceSum(BigDecimal priceSum) {
         this.priceSum = priceSum;
     }
+
+    public BigDecimal getBranchNumSum() { return branchNumSum; }
+    public void setBranchNumSum(BigDecimal branchNumSum) { this.branchNumSum = branchNumSum; }
+    public BigDecimal getBranchPriceSum() { return branchPriceSum; }
+    public void setBranchPriceSum(BigDecimal branchPriceSum) { this.branchPriceSum = branchPriceSum; }
+    public BigDecimal getOfficeNumSum() { return officeNumSum; }
+    public void setOfficeNumSum(BigDecimal officeNumSum) { this.officeNumSum = officeNumSum; }
+    public BigDecimal getOfficePriceSum() { return officePriceSum; }
+    public void setOfficePriceSum(BigDecimal officePriceSum) { this.officePriceSum = officePriceSum; }
+    public BigDecimal getSummaryNumSum() { return summaryNumSum; }
+    public void setSummaryNumSum(BigDecimal summaryNumSum) { this.summaryNumSum = summaryNumSum; }
+    public BigDecimal getSummaryPriceSum() { return summaryPriceSum; }
+    public void setSummaryPriceSum(BigDecimal summaryPriceSum) { this.summaryPriceSum = summaryPriceSum; }
 
     public Long getTenantId() {
         return tenantId;

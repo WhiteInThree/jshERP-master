@@ -147,6 +147,10 @@ public class OrganizationService {
         return list;
     }
 
+    public List<Organization> getDepartmentListByUser() throws Exception {
+        return organizationMapperEx.getDepartmentListByUser();
+    }
+
     public List<Organization> findById(Long id) throws Exception{
         OrganizationExample example = new OrganizationExample();
         example.createCriteria().andIdEqualTo(id);

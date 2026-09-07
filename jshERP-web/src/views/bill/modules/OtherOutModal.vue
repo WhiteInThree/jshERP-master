@@ -355,6 +355,9 @@
             }
             info.unitPrice = this.issueMode ? (info.purchaseDecimal || 0) : 0
             info.allPrice = this.issueMode ? (info.operNumber * info.unitPrice).toFixed(2)-0 : 0
+            if (this.issueMode && this.transferParam && this.transferParam.defaultDepotId) {
+              info.depotId = this.transferParam.defaultDepotId
+            }
             info.linkId = info.id
             listEx.push(info)
             this.changeColumnShow(info)

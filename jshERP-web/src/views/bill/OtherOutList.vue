@@ -192,7 +192,7 @@
   import JEllipsis from '@/components/jeecg/JEllipsis'
   import JDate from '@/components/jeecg/JDate'
   import { deleteAction } from '@/api/manage'
-  import { getAllOrganizationTreeByUser } from '@/api/api'
+  import { getDepartmentListByUser } from '@/api/api'
   import Vue from 'vue'
   export default {
     name: "OtherOutList",
@@ -290,10 +290,9 @@
         }
       },
       loadAllOrgaData() {
-        getAllOrganizationTreeByUser({}).then((res) => {
-          if(res) {
-            this.orgaTree = res
-          }
+        getDepartmentListByUser({}).then((res) => {
+          const list = Array.isArray(res) ? res : (res && res.data) || []
+          this.orgaTree = list.map(item => ({ id: item.id, key: item.id, value: item.id, title: item.orgAbr }))
         })
       },
       searchQuery() {

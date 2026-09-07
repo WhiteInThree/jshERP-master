@@ -248,10 +248,10 @@ public class FunctionController extends BaseController {
 
     private String getRoleFunctionName(Function function, String roleCode) {
         String url = function.getUrl() == null ? "" : function.getUrl();
+        if("/report/out_detail".equals(url)) {
+            return "月领用明细";
+        }
         if(BusinessConstants.ROLE_CODE_DEPT.equals(roleCode)) {
-            if("/report/out_detail".equals(url)) {
-                return "我的领用明细";
-            }
             if("/report/out_material_count".equals(url)) {
                 return "我的领用汇总";
             }

@@ -196,13 +196,13 @@
         tabKey: "1",
         pageName: 'outMaterialCount',
         // 默认索引
-        defDataIndex:['rowIndex','barCode','mName','standard','model','categoryName','materialUnit','numSum','priceSum'],
+        defDataIndex:['rowIndex','barCode','mName','standard','model','categoryName','materialUnit','branchGroup','officeGroup','summaryGroup'],
         // 默认列
         defColumns: [
           {
             dataIndex: 'rowIndex', width:40, align:"center", slots: { title: 'customTitle' },
             customRender:function (t,r,index) {
-              return (t !== '合计') ? (parseInt(index) + 1) : t
+              return (r && r.rowIndex === '合计') ? t : (parseInt(index) + 1)
             }
           },
           {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 120},
@@ -214,8 +214,21 @@
           {title: '制造商', dataIndex: 'mfrs', width: 100, ellipsis:true},
           {title: '类别', dataIndex: 'categoryName', width: 120, ellipsis:true},
           {title: '单位', dataIndex: 'materialUnit', width: 120, ellipsis:true},
-          {title: '出库数量', dataIndex: 'numSum', sorter: (a, b) => a.numSum - b.numSum, width: 120},
-          {title: '出库金额', dataIndex: 'priceSum', sorter: (a, b) => a.priceSum - b.priceSum, width: 120}
+          {title: '分局', dataIndex: 'branchGroup', children: [
+            {title: '数量', dataIndex: 'branchNumSum', width: 100, customRender: value => Number(value || 0)},
+            {title: '单价', dataIndex: 'branchUnitPrice', width: 100, customRender: value => value === '' ? '' : Number(value || 0).toFixed(2)},
+            {title: '金额', dataIndex: 'branchPriceSum', width: 110, customRender: value => Number(value || 0).toFixed(2)}
+          ]},
+          {title: '机关科室', dataIndex: 'officeGroup', children: [
+            {title: '数量', dataIndex: 'officeNumSum', width: 100, customRender: value => Number(value || 0)},
+            {title: '单价', dataIndex: 'officeUnitPrice', width: 100, customRender: value => value === '' ? '' : Number(value || 0).toFixed(2)},
+            {title: '金额', dataIndex: 'officePriceSum', width: 110, customRender: value => Number(value || 0).toFixed(2)}
+          ]},
+          {title: '汇总', dataIndex: 'summaryGroup', children: [
+            {title: '数量', dataIndex: 'summaryNumSum', width: 100, customRender: value => Number(value || 0)},
+            {title: '单价', dataIndex: 'summaryUnitPrice', width: 100, customRender: value => value === '' ? '' : Number(value || 0).toFixed(2)},
+            {title: '金额', dataIndex: 'summaryPriceSum', width: 110, customRender: value => Number(value || 0).toFixed(2)}
+          ]}
         ],
         url: {
           list: "/depotHead/findInOutMaterialCount",
@@ -226,6 +239,7 @@
       this.getDepotData()
       this.initOrgan()
       this.loadCategoryTreeData()
+      this.ensureGroupedColumnsSetting()
       this.initColumnsSetting()
       this.loadCurrentRoleCode()
     },
@@ -254,6 +268,15 @@
         param.pageSize = this.ipagination.pageSize-1;
         return param;
       },
+      ensureGroupedColumnsSetting() {
+        const required = ['branchGroup', 'officeGroup', 'summaryGroup']
+        const stored = Vue.ls.get(this.pageName)
+        if (stored && stored.indexOf(',') > -1) {
+          const keys = stored.split(',')
+          required.forEach(key => { if (keys.indexOf(key) === -1) keys.push(key) })
+          Vue.ls.set(this.pageName, keys.join(','))
+        }
+      },
       onDateChange: function (value, dateString) {
         this.queryParam.beginTime=dateString[0]
         this.queryParam.endTime=dateString[1]
@@ -269,11 +292,11 @@
         this.loading = true;
         getAction(this.url.list, params).then((res) => {
           if (res.code===200) {
-            this.dataSource = res.data.rows;
+            this.dataSource = (res.data.rows || []).map(row => this.normalizeGroupValues(row));
             this.ipagination.total = res.data.total;
-            this.numSumTotalStr = res.data.numSumTotal.toFixed(2)
-            this.priceSumTotalStr = res.data.priceSumTotal.toFixed(2)
-            this.tableAddTotalRow(this.columns, this.dataSource)
+            this.numSumTotalStr = Number(res.data.numSumTotal || 0).toFixed(2)
+            this.priceSumTotalStr = Number(res.data.priceSumTotal || 0).toFixed(2)
+            this.appendGroupedTotalRow()
           } else if(res.code===510){
             this.$message.warning(res.data)
           } else {
@@ -281,6 +304,37 @@
           }
           this.loading = false;
         })
+      },
+      normalizeGroupValues(row) {
+        const groups = [
+          ['branchNumSum', 'branchPriceSum', 'branchUnitPrice'],
+          ['officeNumSum', 'officePriceSum', 'officeUnitPrice'],
+          ['summaryNumSum', 'summaryPriceSum', 'summaryUnitPrice']
+        ]
+        groups.forEach(([numberKey, amountKey, priceKey]) => {
+          const quantity = Number(row[numberKey] || 0)
+          const amount = Number(row[amountKey] || 0)
+          row[numberKey] = quantity
+          row[amountKey] = amount
+          row[priceKey] = quantity ? amount / quantity : ''
+        })
+        return row
+      },
+      appendGroupedTotalRow() {
+        if (!this.dataSource.length || this.ipagination.pageSize % 10 !== 1) return
+        const totalRow = { rowIndex: '合计', mName: '' }
+        ;['branch', 'office', 'summary'].forEach(prefix => {
+          const numberKey = `${prefix}NumSum`
+          const amountKey = `${prefix}PriceSum`
+          const priceKey = `${prefix}UnitPrice`
+          const quantity = this.dataSource.reduce((sum, row) => sum + Number(row[numberKey] || 0), 0)
+          const amount = this.dataSource.reduce((sum, row) => sum + Number(row[amountKey] || 0), 0)
+          totalRow[numberKey] = quantity
+          totalRow[amountKey] = amount
+          totalRow[priceKey] = 0
+        })
+        this.dataSource.push(totalRow)
+        this.ipagination.total += Math.ceil(this.ipagination.total / (this.ipagination.pageSize - 1))
       },
       initOrgan() {
         let that = this;
@@ -336,12 +390,20 @@
       exportExcel() {
         let list = []
         let quantityTitle = this.roleCode === 'ROLE_DEPT' ? '领用数量' : '出库数量'
-        let head = '条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,' + quantityTitle + ',出库金额'
+        let head = '条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,分局,,,' +
+          '机关科室,,,' + '汇总,,,' + '\n,,,,,,,,,数量,单价,金额,数量,单价,金额,数量,单价,金额'
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
-          item.push(ds.barCode, ds.mName, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs,
-            ds.categoryName, ds.materialUnit, ds.numSum, ds.priceSum)
+          if (ds.rowIndex === '合计') {
+            item.push('', '合计', '', '', '', '', '', '', '')
+          } else {
+            item.push(ds.barCode, ds.mName, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs,
+              ds.categoryName, ds.materialUnit)
+          }
+          ;['branch', 'office', 'summary'].forEach(prefix => {
+            item.push(ds[`${prefix}NumSum`] || 0, ds[`${prefix}UnitPrice`] === '' ? '' : Number(ds[`${prefix}UnitPrice`] || 0).toFixed(2), ds[`${prefix}PriceSum`] || 0)
+          })
           list.push(item)
         }
         let tip = '单据日期：' + this.queryParam.beginTime + '~' + this.queryParam.endTime

@@ -33,6 +33,7 @@ const resetPwd = (params)=>postAction("/user/resetPwd",params);
 //部门管理
 const queryOrganizationTreeList = (params)=>getAction("/organization/getOrganizationTree",params);
 const getAllOrganizationTreeByUser = (params)=>getAction("/organization/getAllOrganizationTreeByUser",params);
+const getDepartmentListByUser = (params)=>getAction("/organization/getDepartmentListByUser",params);
 const queryOrganizationById = (params)=>getAction("/organization/findById",params);
 const checkOrganization = (params)=>getAction("/organization/checkIsNameExist",params);
 //经手人管理
@@ -160,6 +161,7 @@ export {
   resetPwd,
   queryOrganizationTreeList,
   getAllOrganizationTreeByUser,
+  getDepartmentListByUser,
   queryOrganizationById,
   checkOrganization,
   addPerson,

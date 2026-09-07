@@ -182,7 +182,7 @@
   import { JeecgListMixin } from '@/mixins/JeecgListMixin'
   import { getFormatDate, getPrevMonthFormatDate } from '@/utils/util'
   import {getAction} from '@/api/manage'
-  import {findBySelectOrgan, findBillDetailByNumber, getUserList, queryMaterialCategoryTreeList, getAllOrganizationTreeByUser} from '@/api/api'
+  import {findBySelectOrgan, findBillDetailByNumber, getUserList, queryMaterialCategoryTreeList, getDepartmentListByUser} from '@/api/api'
   import JEllipsis from '@/components/jeecg/JEllipsis'
   import moment from 'moment'
   import Vue from 'vue'
@@ -243,7 +243,7 @@
           {
             dataIndex: 'rowIndex', width:40, align:"center", slots: { title: 'customTitle' },
             customRender:function (t,r,index) {
-              return (t !== '合计') ? (parseInt(index) + 1) : t
+              return (r && r.id === '__total__') ? '' : String(index)
             }
           },
           {title: '名称', dataIndex: 'mname', width: 120, ellipsis:true},
@@ -320,8 +320,8 @@
             this.departmentNames = matrix.departmentNames
             this.dataSource = matrix.rows
             this.ipagination.total = matrix.rows.length
-            this.operNumberTotalStr = res.data.operNumberTotal.toFixed(2)
-            this.allPriceTotalStr = res.data.allPriceTotal.toFixed(2)
+            this.operNumberTotalStr = Number(res.data.operNumberTotal || 0).toFixed(2)
+            this.allPriceTotalStr = Number(res.data.allPriceTotal || 0).toFixed(2)
           } else if(res.code===510){
             this.$message.warning(res.data)
           } else {
@@ -382,6 +382,22 @@
           row[priceKey] = row[numberKey] ? Number((row[amountKey] / row[numberKey]).toFixed(4)) : 0
         })
         const rows = Object.keys(rowMap).map((key, index) => Object.assign({id: key, rowIndex: index + 1}, rowMap[key]))
+        const totalRow = { id: '__total__', rowIndex: '', mname: '合计', mUnit: '' }
+        departmentNames.forEach((name, index) => {
+          const numberKey = `dept_${index}_number`
+          const priceKey = `dept_${index}_price`
+          const amountKey = `dept_${index}_amount`
+          let quantity = 0
+          let amount = 0
+          rows.forEach(row => {
+            quantity += Number(row[numberKey] || 0)
+            amount += Number(row[amountKey] || 0)
+          })
+          totalRow[numberKey] = quantity
+          totalRow[amountKey] = Number(amount.toFixed(2))
+          totalRow[priceKey] = ''
+        })
+        rows.unshift(totalRow)
         return {columns: baseColumns.concat(departmentColumns), rows, departmentNames}
       },
       initOrgan() {
@@ -423,11 +439,9 @@
       },
       loadAllOrgaData(){
         let that = this
-        let params = {}
-        getAllOrganizationTreeByUser(params).then((res)=>{
-          if(res){
-            that.orgaTree = res
-          }
+        getDepartmentListByUser({}).then((res)=>{
+          const list = Array.isArray(res) ? res : (res && res.data) || []
+          that.orgaTree = list.map(item => ({ id: item.id, key: item.id, value: item.id, title: item.orgAbr }))
         })
       },
       loadCategoryTreeData(){
@@ -477,6 +491,7 @@
         const head = headParts.join(',') + '\n' + subHead.join(',')
         const detailMap = {}
         this.dataSource.forEach(ds => {
+          if (ds.id === '__total__') return
           if (ds.materialId == null) return
           const key = String(ds.materialId)
           if (!detailMap[key]) detailMap[key] = {}
@@ -513,8 +528,25 @@
             })
             return row
           })
+          const totalRow = ['', '合计', '']
+          departments.forEach(name => {
+            const departmentIndex = this.departmentNames.indexOf(name)
+            let quantity = 0
+            let amount = 0
+            if (departmentIndex !== -1) {
+              const numberKey = `dept_${departmentIndex}_number`
+              const amountKey = `dept_${departmentIndex}_amount`
+              this.dataSource.forEach(row => {
+                if (row.id === '__total__') return
+                quantity += Number(row[numberKey] || 0)
+                amount += Number(row[amountKey] || 0)
+              })
+            }
+            totalRow.push(quantity, '', Number(amount.toFixed(2)))
+          })
+          list.unshift(totalRow)
           const tip = '单据日期：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
-          this.handleExportXlsPost('出库明细', '出库明细', head, tip, list)
+          this.handleExportXlsPost('月领用明细', '月领用明细', head, tip, list)
         }).catch(() => {
           this.$message.error('物品信息加载失败，导出取消')
         })
