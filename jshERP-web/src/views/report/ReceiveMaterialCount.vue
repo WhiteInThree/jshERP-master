@@ -24,7 +24,7 @@
         </div>
         <section id="receiveMaterialCountPrint">
           <a-table bordered size="small" rowKey="materialId" :loading="loading" :pagination="pagination"
-            :dataSource="filteredData" :columns="columns" :scroll="{ x: 1500, y: 450}" />
+            :dataSource="displayData" :columns="columns" :scroll="{ x: 3600, y: 450}" />
         </section>
       </a-card>
     </a-col>
@@ -49,10 +49,14 @@ export default {
       loading: false,
       dataSource: [],
       columns: [
-        { title: '序号', dataIndex: 'rowIndex', width: 70, fixed: 'left', customRender: (value, row, index) => index + 1 },
+        { title: '序号', dataIndex: 'rowIndex', width: 70, fixed: 'left' },
         { title: '名称', dataIndex: 'mName', width: 180, fixed: 'left' },
-        ...monthNames.map((title, index) => ({ title, dataIndex: `month${index + 1}`, width: 95, align: 'right', customRender: value => Number(value || 0) })),
-        { title: '合计', dataIndex: 'total', width: 110, align: 'right', customRender: value => Number(value || 0) }
+        ...monthNames.map((title, index) => ({ title, children: [
+          { title: '期初', dataIndex: `month${index + 1}Opening`, width: 90, align: 'right', customRender: value => Number(value || 0) },
+          { title: '领用', dataIndex: `month${index + 1}Issue`, width: 90, align: 'right', customRender: value => Number(value || 0) },
+          { title: '期末', dataIndex: `month${index + 1}Ending`, width: 90, align: 'right', customRender: value => Number(value || 0) }
+        ] })),
+        //{ title: '合计', dataIndex: 'total', width: 110, align: 'right', customRender: value => Number(value || 0) }
       ]
     }
   },
@@ -64,6 +68,16 @@ export default {
       const keyword = (this.materialName || '').trim().toLowerCase()
       if (!keyword) return this.dataSource
       return this.dataSource.filter(item => (item.mName || '').toLowerCase().indexOf(keyword) !== -1)
+    },
+    displayData () {
+      const rows = this.filteredData
+      const total = { materialId: 'total', mName: '合计', isTotal: true, total: rows.reduce((sum, item) => sum + Number(item.total || 0), 0) }
+      for (let month = 1; month <= 12; month++) {
+        ;['Opening', 'Issue', 'Ending'].forEach(type => {
+          total[`month${month}${type}`] = rows.reduce((sum, item) => sum + Number(item[`month${month}${type}`] || 0), 0)
+        })
+      }
+      return [total, ...rows.map((item, index) => ({ ...item, rowIndex: index + 1 }))]
     },
     pagination () {
       return { pageSize: 10, pageSizeOptions: ['10', '20', '50', '100', '200', '500'], showSizeChanger: true, showQuickJumper: true, showTotal: total => `共 ${total} 条` }
@@ -83,9 +97,10 @@ export default {
       this.loadData()
     },
     exportReport () {
-      const head = ['序号', '名称', ...monthNames, '合计']
-      const list = this.filteredData.map((item, index) => [index + 1, item.mName, ...monthNames.map((_, month) => item[`month${month + 1}`] || 0), item.total || 0])
-      this.handleExportXlsPost('领用数量汇总', '领用数量汇总', head.join(','), `${this.year}年度领用数量汇总`, list)
+      const head1 = ['序号', '名称', ...monthNames.map(title => `${title},,`)].join(',')
+      const head2 = [',', ...monthNames.map(() => '期初,领用,期末'), ''].join(',')
+      const list = this.displayData.map((item, index) => [item.isTotal ? '' : index, item.mName, ...monthNames.reduce((values, _, month) => values.concat([item[`month${month + 1}Opening`] || 0, item[`month${month + 1}Issue`] || 0, item[`month${month + 1}Ending`] || 0]), [])])
+      this.handleExportXlsPost('领用数量汇总', '领用数量汇总', `${head1}\n${head2}`, `${this.year}年度领用数量汇总`, list)
     }
   }
 }

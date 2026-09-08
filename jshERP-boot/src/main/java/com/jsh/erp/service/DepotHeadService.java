@@ -1029,7 +1029,8 @@ public class DepotHeadService {
     public List<ReceiveMaterialCountVo> findReceiveMaterialCount(Integer year) throws Exception {
         List<ReceiveMaterialCountVo> list = null;
         try {
-            list = depotHeadMapperEx.findReceiveMaterialCount(year);
+            list = depotHeadMapperEx.findReceiveMaterialCount(year,
+                    java.util.Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
         } catch (Exception e) {
             JshException.readFail(logger, e);
         }

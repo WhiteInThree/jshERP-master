@@ -195,6 +195,7 @@
         roleCode: '',
         issueLoading: false,
         budgetMap: {},
+        budgetRequestId: 0,
         // 查询条件
         queryParam: {
           number: "",
@@ -254,7 +255,7 @@
       this.loadBudgetMap()
     },
     watch: {
-      dataSource: { deep: true, handler (rows) { this.applyBudget(rows) } },
+      dataSource: { handler () { this.loadBudgetMap() } },
       budgetMap: { deep: true, handler () { this.applyBudget(this.dataSource) } }
     },
     computed: {
@@ -284,13 +285,27 @@
         }
       },
       loadBudgetMap() {
-        getBudgetSettingList({ year: new Date().getFullYear() }).then(res => {
-          if (res && res.code === 200) {
-            this.budgetMap = {}
-            ;(res.data || []).forEach(item => { this.budgetMap[item.organizationName] = Number(item.availableAmount || 0).toFixed(2) })
-            this.applyBudget(this.dataSource)
-          }
+        const requestId = ++this.budgetRequestId
+        const years = [...new Set((this.dataSource || []).map(row => this.getBudgetYear(row)).filter(Boolean))]
+        this.budgetMap = {}
+        Promise.all(years.map(year => getBudgetSettingList({ year }).then(res => {
+          if (!res || res.code !== 200) throw new Error('预算信息获取失败')
+          return { year, rows: res.data || [] }
+        }))).then(results => {
+          if (requestId !== this.budgetRequestId) return
+          const budgets = {}
+          results.forEach(({ year, rows }) => {
+            rows.forEach(item => { budgets[`${year}:${item.organizationId}`] = Number(item.availableAmount || 0).toFixed(2) })
+          })
+          this.budgetMap = budgets
+          this.applyBudget(this.dataSource)
+        }).catch(() => {
+          if (requestId === this.budgetRequestId) this.$message.error('预算信息获取失败')
         })
+      },
+      getBudgetYear(row) {
+        const match = String(row.operTimeStr || '').match(/^(\d{4})-/)
+        return match ? Number(match[1]) : null
       },
       resolveIssueDefaultDepot() {
         if (this.defaultDepotId) return Promise.resolve(this.defaultDepotId)
@@ -306,7 +321,7 @@
       applyBudget(rows) {
         if (!rows || !rows.length) return
         rows.forEach(row => {
-          const value = this.budgetMap[row.issueDepartment]
+          const value = this.budgetMap[`${this.getBudgetYear(row)}:${row.organId}`]
           const display = value == null ? '-' : value
           if (row.availableBudget !== display) this.$set(row, 'availableBudget', display)
         })

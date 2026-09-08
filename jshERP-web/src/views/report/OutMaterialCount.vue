@@ -331,7 +331,7 @@
           const amount = this.dataSource.reduce((sum, row) => sum + Number(row[amountKey] || 0), 0)
           totalRow[numberKey] = quantity
           totalRow[amountKey] = amount
-          totalRow[priceKey] = 0
+          totalRow[priceKey] = ''
         })
         this.dataSource.push(totalRow)
         this.ipagination.total += Math.ceil(this.ipagination.total / (this.ipagination.pageSize - 1))

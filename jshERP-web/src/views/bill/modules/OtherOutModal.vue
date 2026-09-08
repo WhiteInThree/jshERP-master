@@ -379,8 +379,15 @@
           this.handleOk()
           return
         }
-        getBudgetByOrganization({ year: new Date().getFullYear(), organizationId }).then(res => {
-          const budget = res && res.code === 200 ? res.data : null
+        const date = this.form.getFieldValue('operTime')
+        const match = String(date || '').match(/^(\d{4})-/)
+        if (!match) {
+          this.$message.warning('请填写有效的单据日期')
+          return
+        }
+        getBudgetByOrganization({ year: Number(match[1]), organizationId }).then(res => {
+          if (!res || res.code !== 200) throw new Error('预算信息获取失败')
+          const budget = res.data
           const available = Number(budget && budget.availableAmount || 0)
           if (total > available) {
             this.$confirm({
