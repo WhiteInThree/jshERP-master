@@ -70,7 +70,9 @@
         select m.id materialId, m.name mName, concat_ws('', m.unit, u.basic_unit) materialUnit,
             (select ifnull(sum(di.basic_number),0) from jsh_depot_item di inner join jsh_depot_head dh on dh.id=di.header_id
              where di.material_id=m.id and ifnull(di.delete_flag,'0')!='1' and ifnull(dh.delete_flag,'0')!='1'
-             and dh.type='入库' and dh.sub_type='采购' and dh.oper_time &lt; concat(#{year},'-01-01')) initialInbound,
+             and dh.type='入库' and dh.sub_type='采购' and dh.oper_time &lt; concat(#{year},'-01-01'))
+             + (select ifnull(sum(mis.number),0) from jsh_material_initial_stock mis
+                where mis.material_id=m.id and ifnull(mis.delete_flag,'0')!='1') initialInbound,
             (select ifnull(sum(di.basic_number),0) from jsh_depot_item di inner join jsh_depot_head dh on dh.id=di.header_id
              where di.material_id=m.id and ifnull(di.delete_flag,'0')!='1' and ifnull(dh.delete_flag,'0')!='1'
              and dh.type='出库' and dh.sub_type='其它' and dh.oper_time &lt; concat(#{year},'-01-01')) initialIssue,
