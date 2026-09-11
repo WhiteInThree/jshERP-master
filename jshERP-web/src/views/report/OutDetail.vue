@@ -474,82 +474,34 @@
         }
       },
       exportExcel() {
-        const allDepartments = []
-        const collectDepartments = nodes => {
-          ;(nodes || []).forEach(node => {
-            if (node.title && allDepartments.indexOf(node.title) === -1) allDepartments.push(node.title)
-            collectDepartments(node.children)
-          })
+        // 直接使用当前表格的列和数据导出，保证导出内容、顺序与页面展示一致。
+        const leafColumns = []
+        const firstHead = []
+        const secondHead = []
+        const csv = value => {
+          const text = value === undefined || value === null ? '' : String(value)
+          return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
         }
-        collectDepartments(this.orgaTree)
-        const departments = allDepartments.length ? allDepartments : this.departmentNames.slice()
-        // 导出采用两行表头：第一行部门名称，第二行为数量、单价、金额。
-        const headParts = ['序号', '名称', '单位']
-        departments.forEach(name => { headParts.push(String(name).replace(/,/g, '，'), '', '') })
-        const subHead = ['', '', '']
-        departments.forEach(() => { subHead.push('数量', '单价', '金额') })
-        const head = headParts.join(',') + '\n' + subHead.join(',')
-        const detailMap = {}
-        this.dataSource.forEach(ds => {
-          if (ds.id === '__total__') return
-          if (ds.materialId == null) return
-          const key = String(ds.materialId)
-          if (!detailMap[key]) detailMap[key] = {}
-          const target = detailMap[key]
-          this.departmentNames.forEach((name, departmentIndex) => {
-            const numberKey = `dept_${departmentIndex}_number`
-            const priceKey = `dept_${departmentIndex}_price`
-            const amountKey = `dept_${departmentIndex}_amount`
-            target[numberKey] = Number(target[numberKey] || 0) + Number(ds[numberKey] || 0)
-            target[amountKey] = Number(target[amountKey] || 0) + Number(ds[amountKey] || 0)
-            target[priceKey] = target[numberKey] ? Number((target[amountKey] / target[numberKey]).toFixed(4)) : 0
-          })
-        })
-        const search = {}
-        getAction('/material/list', {
-          search: JSON.stringify(search),
-          currentPage: 1,
-          pageSize: 100000
-        }).then(res => {
-          if (!res || res.code !== 200) {
-            this.$message.error('物品信息加载失败，导出取消')
-            return
-          }
-          const list = (res.data.rows || []).map((material, index) => {
-            const ds = detailMap[String(material.id)] || {}
-            const row = [index + 1, material.name || '', material.unit || material.unitName || '']
-            departments.forEach(name => {
-              const departmentIndex = this.departmentNames.indexOf(name)
-              row.push(
-                departmentIndex === -1 ? 0 : Number(ds[`dept_${departmentIndex}_number`] || 0),
-                departmentIndex === -1 ? 0 : Number(ds[`dept_${departmentIndex}_price`] || 0),
-                departmentIndex === -1 ? 0 : Number(ds[`dept_${departmentIndex}_amount`] || 0)
-              )
+        this.columns.forEach(column => {
+          if (column.children && column.children.length) {
+            firstHead.push(csv(column.title), ...new Array(column.children.length - 1).fill(''))
+            column.children.forEach(child => {
+              leafColumns.push(child)
+              secondHead.push(csv(child.title))
             })
-            return row
-          })
-          const totalRow = ['', '合计', '']
-          departments.forEach(name => {
-            const departmentIndex = this.departmentNames.indexOf(name)
-            let quantity = 0
-            let amount = 0
-            if (departmentIndex !== -1) {
-              const numberKey = `dept_${departmentIndex}_number`
-              const amountKey = `dept_${departmentIndex}_amount`
-              this.dataSource.forEach(row => {
-                if (row.id === '__total__') return
-                quantity += Number(row[numberKey] || 0)
-                amount += Number(row[amountKey] || 0)
-              })
-            }
-            totalRow.push(quantity, '', Number(amount.toFixed(2)))
-          })
-          list.unshift(totalRow)
-          const tip = '单据日期：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
-          this.handleExportXlsPost('月领用明细', '月领用明细', head, tip, list)
-        }).catch(() => {
-          this.$message.error('物品信息加载失败，导出取消')
+          } else {
+            firstHead.push(csv(column.title))
+            secondHead.push('')
+            leafColumns.push(column)
+          }
         })
+        const head = firstHead.join(',') + '\n' + secondHead.join(',')
+        const list = this.dataSource.map(row => leafColumns.map(column => {
+          const value = row[column.dataIndex]
+          return csv(value === undefined || value === null ? '' : value)
+        }))
+        const tip = '单据日期：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
+        this.handleExportXlsPost('月领用明细', '月领用明细', head, tip, list)
       }
     }
   }
