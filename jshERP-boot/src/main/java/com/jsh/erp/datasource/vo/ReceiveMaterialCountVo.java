@@ -38,10 +38,12 @@ public class ReceiveMaterialCountVo {
     private BigDecimal issue(int month) { return value(issueQuantities, month); }
     private BigDecimal opening(int month) {
         BigDecimal balance = initialInbound.subtract(initialIssue);
-        for (int i = 1; i < month; i++) balance = balance.add(inbound(i)).subtract(issue(i));
-        return balance;
+        for (int i = 1; i < month; i++) {
+            balance = balance.add(inbound(i)).subtract(issue(i));
+        }
+        return balance.add(inbound(month));
     }
-    private BigDecimal ending(int month) { return opening(month).add(inbound(month)).subtract(issue(month)); }
+    private BigDecimal ending(int month) { return opening(month).subtract(issue(month)); }
     public void setMonthInbound(int month, BigDecimal value) { set(inboundQuantities, month, value); }
     public void setMonthIssue(int month, BigDecimal value) { set(issueQuantities, month, value); }
     public void setMonth1Inbound(BigDecimal v) { setMonthInbound(1, v); } public void setMonth1Issue(BigDecimal v) { setMonthIssue(1, v); }

@@ -33,8 +33,8 @@
     <!-- update-end author:sunjianlei date:20191220 for: 解决全局样式冲突的问题 -->
     <!-- update_end  author:zhaoxin date:20191129 for: 做头部菜单栏导航 -->
     <header-notice class="action"/>
-    <a-dropdown>
-      <span v-if="isDesktop()" class="action ant-dropdown-link user-dropdown-menu">
+    <a-dropdown v-if="device !== 'mobile'">
+      <span class="action ant-dropdown-link user-dropdown-menu">
         <a-icon type="down-circle"/>
         <span style="margin-left:4px">欢迎您，{{ nickname() }}</span>
       </span>

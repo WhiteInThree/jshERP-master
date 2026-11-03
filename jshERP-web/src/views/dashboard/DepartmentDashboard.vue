@@ -98,7 +98,6 @@
       metrics() {
         return [
           { key: 'pending', label: '待审核申请', value: this.summary.pendingApplyCount || 0, note: '等待办公室处理', icon: 'clock-circle', tone: 'coral' },
-          { key: 'approved', label: '已审核待发放', value: this.summary.approvedPendingIssueCount || 0, note: '即将安排发放', icon: 'check-circle', tone: 'amber' },
           { key: 'received', label: '本月已领用', value: this.formatNumber(this.summary.monthReceivedCount), note: '本月累计发放数量', icon: 'inbox', tone: 'teal' },
           { key: 'stock', label: '当前库存物品种类', value: this.summary.currentStockMaterialCount || 0, note: '库存大于零的物品种类', icon: 'appstore', tone: 'navy' }
         ]
@@ -142,13 +141,11 @@
           '1': '待发放',
           '2': '待发放',
           '3': '待发放',
-          '4': '已发放',
           '9': '审核中'
         }
         return statusMap[status] || '处理中'
       },
       statusClass(status) {
-        if(status === '4') return 'status-issued'
         if(status === '1' || status === '2' || status === '3') return 'status-approved'
         return 'status-pending'
       },
@@ -365,7 +362,6 @@
 
   .status-pending { background: #d3775e; }
   .status-approved { background: #d5a143; }
-  .status-issued { background: #3e8a7e; }
 
   .top-row {
     display: grid;

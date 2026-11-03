@@ -57,7 +57,6 @@
                       <a-select-option value="0">未审核</a-select-option>
                       <a-select-option value="9" v-if="!checkFlag">审核中</a-select-option>
                       <a-select-option value="1">已审核</a-select-option>
-                      <a-select-option value="4">已发放</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -75,7 +74,6 @@
           <a-button v-if="btnEnableList.indexOf(1)>-1" @click="myHandleAdd" type="primary" icon="plus">新增</a-button>
           <a-button v-if="btnEnableList.indexOf(1)>-1" icon="delete" @click="batchDel">删除</a-button>
           <a-button v-if="btnEnableList.indexOf(1)>-1" icon="edit" @click="handleQuickEdit">备注</a-button>
-          <a-button v-if="canConfirmIssue" icon="export" :loading="issueLoading" @click="confirmIssue">确认发放</a-button>
           <a-button v-if="canAuditApply && checkFlag && btnEnableList.indexOf(2)>-1" icon="check" @click="batchSetStatus(1)">审核</a-button>
           <a-button v-if="canAuditApply && checkFlag && btnEnableList.indexOf(7)>-1" icon="stop" @click="batchSetStatus(0)">反审核</a-button>
           <a-button v-if="isShowExcel && btnEnableList.indexOf(3)>-1" icon="download" @click="handleExport">导出</a-button>
@@ -137,7 +135,6 @@
             <template slot="customRenderStatus" slot-scope="status">
               <a-tag v-if="status == '0'" color="red">未审核</a-tag>
               <a-tag v-if="status == '1' || status == '2' || status == '3'" color="green">已审核</a-tag>
-              <a-tag v-if="status == '4'" color="purple">已发放</a-tag>
               <a-tag v-if="status == '9'" color="orange">审核中</a-tag>
             </template>
             <a-table
@@ -156,7 +153,6 @@
         <!-- table区域-end -->
         <!-- 表单区域 -->
         <purchase-apply-modal ref="modalForm" :role-code="roleCode" @ok="modalFormOk" @close="modalFormClose"></purchase-apply-modal>
-        <other-out-modal ref="issueModalForm" @ok="modalFormOk" @close="modalFormClose"></other-out-modal>
         <bill-detail ref="modalDetail" @ok="modalFormOk" @close="modalFormClose"></bill-detail>
         <bill-excel-iframe ref="billExcelIframe" @ok="modalFormOk" @close="modalFormClose"></bill-excel-iframe>
         <quick-edit-modal ref="quickEditModal" @ok="modalFormOk" @close="modalFormClose"></quick-edit-modal>
@@ -167,7 +163,6 @@
 <!-- by  ji  sheng  hua-->
 <script>
   import PurchaseApplyModal from './modules/PurchaseApplyModal'
-  import OtherOutModal from './modules/OtherOutModal'
   import BillDetail from './dialog/BillDetail'
   import BillExcelIframe from '@/components/tools/BillExcelIframe'
   import QuickEditModal from './dialog/QuickEditModal'
@@ -183,7 +178,6 @@
     mixins:[JeecgListMixin,BillListMixin],
     components: {
       PurchaseApplyModal,
-      OtherOutModal,
       BillDetail,
       BillExcelIframe,
       QuickEditModal,
@@ -193,7 +187,6 @@
     data () {
       return {
         roleCode: '',
-        issueLoading: false,
         budgetMap: {},
         budgetRequestId: 0,
         // 查询条件
@@ -259,16 +252,13 @@
       budgetMap: { deep: true, handler () { this.applyBudget(this.dataSource) } }
     },
     computed: {
-      canConfirmIssue() {
-        return this.roleCode === 'ROLE_ADMIN' || this.roleCode === 'ROLE_OFFICE'
-      },
       canAuditApply() {
         return this.roleCode === 'ROLE_ADMIN' || this.roleCode === 'ROLE_OFFICE'
       },
       applyHelpText() {
         return this.canAuditApply
-          ? '领用申请只涉及数量，办公室审核后可确认发放。勾选单据后可以进行删除、审核、反审核或确认发放。'
-          : '领用申请只涉及数量，提交后由办公室审核并确认发放。'
+          ? '领用申请只涉及数量，办公室审核通过后系统自动生成出库单并完成发放。勾选单据后可以进行删除、审核或反审核。'
+          : '领用申请只涉及数量，提交后由办公室审核，审核通过后系统自动完成发放。'
       }
     },
     methods: {
@@ -307,17 +297,6 @@
         const match = String(row.operTimeStr || '').match(/^(\d{4})-/)
         return match ? Number(match[1]) : null
       },
-      resolveIssueDefaultDepot() {
-        if (this.defaultDepotId) return Promise.resolve(this.defaultDepotId)
-        return getAction('/depot/findDepotByCurrentUser').then(res => {
-          const depots = res && res.code === 200 ? (res.data || []) : []
-          if (depots.length === 1) return String(depots[0].id)
-          const warehouseOne = depots.find(item => item.depotName === '仓库1')
-          if (warehouseOne) return String(warehouseOne.id)
-          const defaultDepot = depots.find(item => item.isDefault)
-          return defaultDepot ? String(defaultDepot.id) : ''
-        })
-      },
       applyBudget(rows) {
         if (!rows || !rows.length) return
         rows.forEach(row => {
@@ -340,46 +319,6 @@
           }
         })
       },
-      confirmIssue() {
-        if(this.selectedRowKeys.length !== 1) {
-          this.$message.warning('请选择一条领用申请！')
-          return
-        }
-        const info = this.selectionRows[0]
-        if(info.status !== '1' && info.status !== '2' && info.status !== '3') {
-          this.$message.warning('只能发放已审核的领用申请！')
-          return
-        }
-        this.issueLoading = true
-        const params = {
-          headerId: info.id,
-          mpList: '',
-          linkType: 'basic'
-        }
-        Promise.all([
-          getAction('/depotItem/getDetailList', params),
-          this.resolveIssueDefaultDepot()
-        ]).then(([res, defaultDepotId]) => {
-          if(res && res.code === 200) {
-            const issueModal = this.$refs.issueModalForm
-            issueModal.action = 'add'
-            issueModal.transferParam = {
-              issueMode: true,
-              list: res.data.rows,
-              number: info.number,
-              departmentName: info.issueDepartment,
-              organizationId: info.organId,
-              remark: info.remark,
-              defaultDepotId: defaultDepotId
-            }
-            issueModal.defaultDepotId = defaultDepotId
-            issueModal.add()
-            issueModal.title = '确认发放'
-          }
-        }).finally(() => {
-          this.issueLoading = false
-        })
-      }
     }
   }
 </script>

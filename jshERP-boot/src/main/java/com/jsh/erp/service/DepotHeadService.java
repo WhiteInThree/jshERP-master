@@ -509,9 +509,12 @@ public class DepotHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteBillByIds(String ids)throws Exception {
+        return batchDeleteBillByIds(ids, userService.getCurrentUser());
+    }
+
+    private int batchDeleteBillByIds(String ids, User currentUser)throws Exception {
         StringBuffer sb = new StringBuffer();
         sb.append(BusinessConstants.LOG_OPERATION_TYPE_DELETE);
-        User currentUser = userService.getCurrentUser();
         List<DepotHead> dhList = getDepotHeadListByIds(ids);
         for(DepotHead depotHead: dhList){
             checkDepartmentPurchaseApplyOwner(currentUser, depotHead);
@@ -523,7 +526,7 @@ public class DepotHeadService {
         }
         for(DepotHead depotHead: dhList){
             sb.append("[").append(depotHead.getNumber()).append("]");
-            User userInfo = userService.getCurrentUser();
+            User userInfo = currentUser;
             //删除入库单据，先校验序列号是否出库，如果未出库则同时删除序列号，如果已出库则不能删除单据
             if (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())) {
                 List<DepotItem> depotItemList = depotItemMapperEx.findDepotItemListBydepotheadId(depotHead.getId(), BusinessConstants.ENABLE_SERIAL_NUMBER_ENABLED);
@@ -812,9 +815,10 @@ public class DepotHeadService {
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public int batchSetStatus(String status, String depotHeadIDs)throws Exception {
+    public int batchSetStatus(String status, String depotHeadIDs, HttpServletRequest request)throws Exception {
         int result = 0;
-        checkDepartmentCanAudit(userService.getCurrentUser());
+        User operator = userService.getCurrentUser();
+        checkDepartmentCanAudit(operator);
         boolean forceApprovalFlag = systemConfigService.getForceApprovalFlag();
         boolean minusStockFlag = systemConfigService.getMinusStockFlag();
         boolean inOutManageFlag = systemConfigService.getInOutManageFlag();
@@ -825,10 +829,10 @@ public class DepotHeadService {
             DepotHead depotHead = getDepotHead(id);
             if("0".equals(status)){
                 //进行反审核操作
-                if(BusinessConstants.BILLS_STATUS_ISSUED.equals(depotHead.getStatus())
-                        && BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
-                        && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())) {
-                    result += reverseIssuedPurchaseApply(depotHead);
+                if(BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                        && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())
+                        && "1".equals(depotHead.getStatus()) && hasIssuedPurchaseApply(depotHead)) {
+                    result += reverseAutoIssuedPurchaseApply(depotHead, operator);
                     continue;
                 } else if("1".equals(depotHead.getStatus()) && "0".equals(depotHead.getPurchaseStatus())) {
                     dhIds.add(id);
@@ -880,6 +884,17 @@ public class DepotHeadService {
             DepotHeadExample example = new DepotHeadExample();
             example.createCriteria().andIdIn(dhIds);
             result += depotHeadMapper.updateByExampleSelective(depotHead, example);
+            // 领用申请审核通过后立即生成其它出库单并完成发放，沿用原确认发放的出库及库存处理逻辑。
+            if(BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
+                for(Long dhId : dhIds) {
+                    DepotHead apply = getDepotHead(dhId);
+                    if(apply != null
+                            && BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(apply.getType())
+                            && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(apply.getSubType())) {
+                        autoConfirmIssue(apply, request);
+                    }
+                }
+            }
             //更新当前库存
             if(systemConfigService.getForceApprovalFlag()) {
                 for(Long dhId: dhIds) {
@@ -900,7 +915,79 @@ public class DepotHeadService {
         return result;
     }
 
-    private int reverseIssuedPurchaseApply(DepotHead purchaseApply) throws Exception {
+    /** 审核通过的领用申请自动生成其它出库单。 */
+    private void autoConfirmIssue(DepotHead purchaseApply, HttpServletRequest request) throws Exception {
+        DepotHeadExample issueExample = new DepotHeadExample();
+        issueExample.createCriteria().andLinkNumberEqualTo(purchaseApply.getNumber())
+                .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_OUT)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_OTHER)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        if(depotHeadMapper.countByExample(issueExample) > 0) {
+            return;
+        }
+        JSONArray depots = depotService.findDepotByCurrentUser();
+        if(depots == null || depots.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CONFIRM_ISSUE_FAILED_CODE,
+                    "抱歉，当前账号没有可用仓库，无法自动发放");
+        }
+        Long depotId = null;
+        for(Object object : depots) {
+            JSONObject depot = JSONObject.parseObject(object.toString());
+            if(Boolean.TRUE.equals(depot.getBoolean("isDefault"))) {
+                depotId = depot.getLong("id");
+                break;
+            }
+        }
+        if(depotId == null) {
+            depotId = JSONObject.parseObject(depots.get(0).toString()).getLong("id");
+        }
+        DepotHead issueHead = new DepotHead();
+        issueHead.setType(BusinessConstants.DEPOTHEAD_TYPE_OUT);
+        issueHead.setSubType(BusinessConstants.SUB_TYPE_OTHER);
+        issueHead.setStatus(BusinessConstants.BILLS_STATUS_AUDIT);
+        issueHead.setNumber("QTCK" + sequenceService.buildOnlyNumber());
+        issueHead.setDefaultNumber(issueHead.getNumber());
+        issueHead.setOperTime(new Date());
+        issueHead.setLinkNumber(purchaseApply.getNumber());
+        issueHead.setOrganId(purchaseApply.getOrganId());
+        issueHead.setRemark(purchaseApply.getRemark());
+        User currentUser = userService.getCurrentUser();
+        issueHead.setCreator(currentUser == null ? null : currentUser.getId());
+        List<DepotItemVo4WithInfoEx> itemList = depotItemService.getDetailList(purchaseApply.getId());
+        JSONArray rows = new JSONArray();
+        for(DepotItemVo4WithInfoEx item : itemList) {
+            JSONObject row = JSONObject.parseObject(JSONObject.toJSONString(item));
+            row.put("linkId", item.getId());
+            row.put("unit", item.getMaterialUnit());
+            row.put("depotId", depotId);
+            rows.add(row);
+        }
+        String issueRows = prepareConfirmIssueDetails(purchaseApply, issueHead, rows.toJSONString());
+        addDepotHeadAndDetailInternal(JSONObject.toJSONString(issueHead), issueRows, request);
+        DepotHead issuedApply = new DepotHead();
+        issuedApply.setId(purchaseApply.getId());
+        issuedApply.setStatus(BusinessConstants.BILLS_STATUS_AUDIT);
+        depotHeadMapper.updateByPrimaryKeySelective(issuedApply);
+    }
+
+    private boolean hasIssuedPurchaseApply(DepotHead purchaseApply) {
+        DepotHeadExample example = new DepotHeadExample();
+        example.createCriteria().andLinkNumberEqualTo(purchaseApply.getNumber())
+                .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_OUT)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_OTHER)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        return depotHeadMapper.countByExample(example) > 0;
+    }
+
+    private int reverseAutoIssuedPurchaseApply(DepotHead purchaseApply, User operator) throws Exception {
+        reverseIssuedPurchaseApply(purchaseApply, operator);
+        DepotHead restoredApply = new DepotHead();
+        restoredApply.setId(purchaseApply.getId());
+        restoredApply.setStatus(BusinessConstants.BILLS_STATUS_UN_AUDIT);
+        return depotHeadMapper.updateByPrimaryKeySelective(restoredApply);
+    }
+
+    private int reverseIssuedPurchaseApply(DepotHead purchaseApply, User operator) throws Exception {
         DepotHeadExample issueExample = new DepotHeadExample();
         issueExample.createCriteria().andLinkNumberEqualTo(purchaseApply.getNumber())
                 .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_OUT)
@@ -917,7 +1004,7 @@ public class DepotHeadService {
         DepotHeadExample updateIssueExample = new DepotHeadExample();
         updateIssueExample.createCriteria().andIdIn(issueIds);
         depotHeadMapper.updateByExampleSelective(unAuditIssue, updateIssueExample);
-        batchDeleteBillByIds(issueIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
+        batchDeleteBillByIds(issueIds.stream().map(String::valueOf).collect(Collectors.joining(",")), operator);
 
         DepotHeadExample purchaseOrderExample = new DepotHeadExample();
         purchaseOrderExample.createCriteria().andLinkApplyEqualTo(purchaseApply.getNumber())
@@ -1369,7 +1456,7 @@ public class DepotHeadService {
         addDepotHeadAndDetailInternal(JSONObject.toJSONString(issueHead), issueRows, request);
         DepotHead issuedApply = new DepotHead();
         issuedApply.setId(purchaseApply.getId());
-        issuedApply.setStatus(BusinessConstants.BILLS_STATUS_ISSUED);
+        issuedApply.setStatus(BusinessConstants.BILLS_STATUS_AUDIT);
         depotHeadMapper.updateByPrimaryKeySelective(issuedApply);
     }
 
@@ -1393,10 +1480,13 @@ public class DepotHeadService {
                     || applyItem.getOperNumber().compareTo(row.getBigDecimal("operNumber")) != 0) {
                 throwConfirmIssueDetailException();
             }
-            BigDecimal unitPrice = depotItemMapperEx.getPurchaseUnitPriceByYear(materialExtend.getId(), issueHead.getOperTime());
+            BigDecimal unitPrice = applyItem.getUnitPrice();
             if (unitPrice == null) {
-                unitPrice = materialExtend.getPurchaseDecimal() == null
-                        ? BigDecimal.ZERO : materialExtend.getPurchaseDecimal();
+                unitPrice = depotItemMapperEx.getPurchaseUnitPriceByYear(materialExtend.getId(), issueHead.getOperTime());
+                if (unitPrice == null) {
+                    unitPrice = materialExtend.getPurchaseDecimal() == null
+                            ? BigDecimal.ZERO : materialExtend.getPurchaseDecimal();
+                }
             }
             BigDecimal allPrice = row.getBigDecimal("operNumber").multiply(unitPrice)
                     .setScale(2, RoundingMode.HALF_UP);
@@ -1439,6 +1529,15 @@ public class DepotHeadService {
             }
         }
         addDepotHeadAndDetailInternal(beanJson, rows, request);
+        // 保存并审核领用申请时，立即执行自动发放；库存不足会在出库明细保存阶段抛出异常并回滚申请。
+        if(BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())
+                && BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
+            DepotHead savedApply = depotHeadMapperEx.getDepotHeadForUpdate(depotHead.getNumber());
+            if(savedApply != null) {
+                autoConfirmIssue(savedApply, request);
+            }
+        }
     }
 
     private void addDepotHeadAndDetailInternal(String beanJson, String rows,
@@ -2032,8 +2131,6 @@ public class DepotHeadService {
                         return "完成采购";
                     case "3":
                         return "部分采购";
-                    case "4":
-                        return "已发放";
                 }
             } else if("sale".equals(type)) {
                 switch (status) {

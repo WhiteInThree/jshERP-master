@@ -172,7 +172,7 @@ public class DepotHeadController extends BaseController {
         Map<String, Object> objectMap = new HashMap<>();
         String status = jsonObject.getString("status");
         String ids = jsonObject.getString("ids");
-        int res = depotHeadService.batchSetStatus(status, ids);
+        int res = depotHeadService.batchSetStatus(status, ids, request);
         if(res > 0) {
             return returnJson(objectMap, ErpInfo.OK.name, ErpInfo.OK.code);
         } else {

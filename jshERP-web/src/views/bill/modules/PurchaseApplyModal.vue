@@ -192,6 +192,8 @@
             { title: '数量', key: 'operNumber', width: '6%', type: FormTypes.inputNumber, statistics: true,
               validateRules: [{ required: true, message: '${title}不能为空' }]
             },
+            { title: '单价', key: 'unitPrice', width: '6%', type: FormTypes.inputNumber },
+            { title: '金额', key: 'allPrice', width: '7%', type: FormTypes.inputNumber, readonly: true, statistics: true },
             { title: '备注', key: 'remark', width: '8%', type: FormTypes.input},
           ]
         },
