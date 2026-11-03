@@ -136,8 +136,9 @@ public class LogService {
                 String createTime = Tools.getNow3();
                 Long count = logMapperEx.getCountByIpAndDate(userId, moduleName, clientIp, createTime);
                 if(count > 0) {
-                    //如果某个用户某个IP在同1秒内连续操作两遍，此时需要删除该redis记录，使其退出，防止恶意攻击
-                    redisService.deleteObjectByUserAndIp(userId, clientIp);
+                    // 重复操作只跳过重复日志，不能删除登录会话。审核、自动出库等一次请求可能写入多条日志，
+                    // 删除 Redis 中的 userId 会导致后续同一 Token 请求被误判为登录过期。
+                    return;
                 } else {
                     Log log = new Log();
                     log.setUserId(userId);
