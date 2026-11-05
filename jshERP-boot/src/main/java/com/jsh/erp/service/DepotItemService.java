@@ -807,7 +807,10 @@ public class DepotItemService {
         depotHeadOrders.setStatus(billStatus);
         DepotHeadExample example = new DepotHeadExample();
         List<String> linkNoList = StringUtil.strToStringList(linkStr);
-        example.createCriteria().andNumberIn(linkNoList);
+        // 领用申请只保留审核状态，不再使用订单的全部/部分完成状态。
+        // 编辑关联出库单（包括仅修改日期）也不能回写领用申请为 2 或 3。
+        example.createCriteria().andNumberIn(linkNoList)
+                .andSubTypeNotEqualTo(BusinessConstants.SUB_TYPE_PURCHASE_APPLY);
         try{
             depotHeadMapper.updateByExampleSelective(depotHeadOrders, example);
         }catch(Exception e){

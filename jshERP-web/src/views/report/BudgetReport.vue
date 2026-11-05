@@ -83,7 +83,7 @@
         </div>
         <section id="budgetReportPrint">
           <a-table bordered size="small" rowKey="organizationId" :loading="loading"
-            :pagination="pagination" :dataSource="filteredData" :columns="columns" :scroll="{ x: 3150, y: 400 }">
+            :pagination="pagination" :dataSource="tableData" :columns="columns" :rowClassName="rowClassName" :scroll="{ x: 3150, y: 400 }">
           </a-table>
         </section>
       </a-card>
@@ -143,8 +143,35 @@ export default {
       if (!this.organizationIds.length) return this.dataSource
       return this.dataSource.filter(item => this.organizationIds.indexOf(item.organizationId) !== -1)
     },
+    summaryRow () {
+      const summary = {
+        organizationId: 'budget-summary',
+        organizationName: '合计',
+        isSummary: true,
+        initialBudget: 0,
+        totalExpense: 0,
+        yearEndBalance: 0
+      }
+      for (let index = 1; index <= 12; index++) {
+        summary[`month${index}CarryOver`] = 0
+        summary[`month${index}Expense`] = 0
+      }
+      this.filteredData.forEach(item => {
+        summary.initialBudget += Number(item.initialBudget || 0)
+        summary.totalExpense += Number(item.totalExpense || 0)
+        summary.yearEndBalance += Number(item.yearEndBalance || 0)
+        for (let index = 1; index <= 12; index++) {
+          summary[`month${index}CarryOver`] += Number(item[`month${index}CarryOver`] || 0)
+          summary[`month${index}Expense`] += Number(item[`month${index}Expense`] || 0)
+        }
+      })
+      return summary
+    },
+    tableData () {
+      return [this.summaryRow, ...this.filteredData]
+    },
     pagination () {
-      return { pageSize: 10, pageSizeOptions: ['10', '20', '50', '100', '200', '500'], showSizeChanger: true, showQuickJumper: true, showTotal: total => `共 ${total} 条` }
+      return { pageSize: 10, pageSizeOptions: ['10', '20', '50', '100', '200', '500'], showSizeChanger: true, showQuickJumper: true, showTotal: () => `共 ${this.filteredData.length} 条` }
     }
   },
   mounted () {
@@ -169,11 +196,14 @@ export default {
       this.year = new Date().getFullYear()
       this.loadData()
     },
+    rowClassName (record) {
+      return record.isSummary ? 'budget-summary-row' : ''
+    },
     exportReport () {
       const head = ['部门', '期初（年度初始预算）']
       monthNames.forEach(name => head.push(`${name}-上期结余`, `${name}-支出`))
       head.push('支出合计', '年末结余数')
-      const list = this.filteredData.map(item => {
+      const list = [this.summaryRow, ...this.filteredData].map(item => {
         const row = [item.organizationName, item.initialBudget]
         for (let index = 1; index <= 12; index++) {
           row.push(item[`month${index}CarryOver`] || 0, item[`month${index}Expense`] || 0)
@@ -191,5 +221,9 @@ export default {
 #budgetReportPrint /deep/ .ant-table-thead > tr > th {
   text-align: center;
   white-space: nowrap;
+}
+#budgetReportPrint /deep/ .budget-summary-row > td {
+  font-weight: 600;
+  background: #f5f7fa;
 }
 </style>

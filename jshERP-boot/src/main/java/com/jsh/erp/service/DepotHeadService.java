@@ -947,7 +947,8 @@ public class DepotHeadService {
         issueHead.setStatus(BusinessConstants.BILLS_STATUS_AUDIT);
         issueHead.setNumber("QTCK" + sequenceService.buildOnlyNumber());
         issueHead.setDefaultNumber(issueHead.getNumber());
-        issueHead.setOperTime(new Date());
+        // 补录历史领用时，发放业务日期应与领用申请一致。
+        issueHead.setOperTime(purchaseApply.getOperTime());
         issueHead.setLinkNumber(purchaseApply.getNumber());
         issueHead.setOrganId(purchaseApply.getOrganId());
         issueHead.setRemark(purchaseApply.getRemark());
