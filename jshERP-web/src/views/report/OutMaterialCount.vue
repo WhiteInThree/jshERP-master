@@ -27,7 +27,13 @@
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                   <a-button type="primary" @click="searchQuery">查询</a-button>
                   <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
-                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+                  <a-dropdown :trigger="['click']" :disabled="reportExportLoading">
+                    <a-button style="margin-left: 8px" :loading="reportExportLoading" icon="download">导出 <a-icon type="down" /></a-button>
+                    <a-menu slot="overlay" @click="({ key }) => runReportExport(key)">
+                      <a-menu-item key="page">导出当前页</a-menu-item>
+                      <a-menu-item key="all">导出全部</a-menu-item>
+                    </a-menu>
+                  </a-dropdown>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
                     {{ toggleSearchStatus ? '收起' : '展开' }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
@@ -147,6 +153,7 @@
 </template>
 <script>
   import { JeecgListMixin } from '@/mixins/JeecgListMixin'
+  import { ReportExportMixin } from '@/mixins/ReportExportMixin'
   import { getFormatDate, getPrevMonthFormatDate } from '@/utils/util'
   import {getAction} from '@/api/manage'
   import {findBySelectOrgan, queryMaterialCategoryTreeList} from '@/api/api'
@@ -155,7 +162,7 @@
   import Vue from 'vue'
   export default {
     name: "OutMaterialCount",
-    mixins:[JeecgListMixin],
+    mixins:[JeecgListMixin, ReportExportMixin],
     components: {
       JEllipsis,
       VNodes: {
@@ -387,14 +394,14 @@
           this.loadData(1);
         }
       },
-      exportExcel() {
+      exportExcel(rows) {
         let list = []
         let quantityTitle = this.roleCode === 'ROLE_DEPT' ? '领用数量' : '出库数量'
         let head = '条码,名称,规格,型号,颜色,品牌,制造商,类型,单位,分局,,,' +
           '机关科室,,,' + '汇总,,,' + '\n,,,,,,,,,数量,单价,金额,数量,单价,金额,数量,单价,金额'
-        for (let i = 0; i < this.dataSource.length; i++) {
+        for (let i = 0; i < rows.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = rows[i]
           if (ds.rowIndex === '合计') {
             item.push('', '合计', '', '', '', '', '', '', '')
           } else {

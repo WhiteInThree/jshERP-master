@@ -42,7 +42,7 @@
             </a-row>
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
-                <a-col :md="6" :sm="24">
+                <!-- <a-col :md="6" :sm="24">
                   <a-form-item label="单据编号" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-input placeholder="请输入单据编号" v-model="queryParam.number"></a-input>
                   </a-form-item>
@@ -103,7 +103,7 @@
                   <a-form-item label="备注" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-input placeholder="请输入备注" v-model="queryParam.remark"></a-input>
                   </a-form-item>
-                </a-col>
+                </a-col> -->
               </a-row>
             </template>
           </a-form>

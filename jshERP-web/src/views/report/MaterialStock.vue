@@ -30,7 +30,13 @@
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                   <a-button type="primary" @click="searchQuery">查询</a-button>
                   <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
-                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+                  <a-dropdown :trigger="['click']" :disabled="reportExportLoading">
+                    <a-button style="margin-left: 8px" :loading="reportExportLoading" icon="download">导出 <a-icon type="down" /></a-button>
+                    <a-menu slot="overlay" @click="({ key }) => runReportExport(key)">
+                      <a-menu-item key="page">导出当前页</a-menu-item>
+                      <a-menu-item key="all">导出全部</a-menu-item>
+                    </a-menu>
+                  </a-dropdown>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
                     {{ toggleSearchStatus ? '收起' : '展开' }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
@@ -160,6 +166,7 @@
   import MaterialInOutList from './modules/MaterialInOutList'
   import MaterialDepotStockList from './modules/MaterialDepotStockList'
   import { JeecgListMixin } from '@/mixins/JeecgListMixin'
+  import { ReportExportMixin } from '@/mixins/ReportExportMixin'
   import { getAction, getFileAccessHttpUrl } from '@/api/manage'
   import {queryMaterialCategoryTreeList} from '@/api/api'
   import { getMpListShort } from "@/utils/util"
@@ -168,7 +175,7 @@
   import Vue from 'vue'
   export default {
     name: "MaterialStock",
-    mixins:[JeecgListMixin],
+    mixins:[JeecgListMixin, ReportExportMixin],
     components: {
       MaterialInOutList,
       MaterialDepotStockList,
@@ -333,16 +340,16 @@
         this.$refs.materialDepotStockList.title = "查看商品库存分布（条码：" + record.mBarCode + "，名称：" + record.name + "）";
         this.$refs.materialDepotStockList.disableSubmit = false;
       },
-      exportExcel() {
+      exportExcel(rows) {
         let list = []
         let headArray = this.defColumns
           .filter(col => col.dataIndex !== 'rowIndex' && col.dataIndex !== 'action' && col.dataIndex !== 'pic')
           .map(col => col.title)
         let head = headArray.join(',')
 
-        for (let i = 0; i < this.dataSource.length; i++) {
+        for (let i = 0; i < rows.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = rows[i]
           this.defColumns.forEach(col => {
             if (col.dataIndex !== 'rowIndex' && col.dataIndex !== 'action' && col.dataIndex !== 'pic') {
               item.push(ds[col.dataIndex])

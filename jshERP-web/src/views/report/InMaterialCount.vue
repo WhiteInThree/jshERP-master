@@ -27,7 +27,13 @@
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                   <a-button type="primary" @click="searchQuery">查询</a-button>
                   <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
-                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+                  <a-dropdown :trigger="['click']" :disabled="reportExportLoading">
+                    <a-button style="margin-left: 8px" :loading="reportExportLoading" icon="download">导出 <a-icon type="down" /></a-button>
+                    <a-menu slot="overlay" @click="({ key }) => runReportExport(key)">
+                      <a-menu-item key="page">导出当前页</a-menu-item>
+                      <a-menu-item key="all">导出全部</a-menu-item>
+                    </a-menu>
+                  </a-dropdown>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
                     {{ toggleSearchStatus ? '收起' : '展开' }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
@@ -70,13 +76,13 @@
                     </a-select>
                   </a-form-item>
                 </a-col>
-                <a-col :md="6" :sm="24" v-if="orgaTree.length">
+                <!-- <a-col :md="6" :sm="24" v-if="orgaTree.length">
                   <a-form-item label="部门" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-tree-select style="width:100%" allow-clear :treeData="orgaTree"
                                    v-model="queryParam.organizationId" placeholder="请选择部门">
                     </a-tree-select>
                   </a-form-item>
-                </a-col>
+                </a-col> -->
                 <a-col :md="6" :sm="24">
                   <a-form-item label="商品类别" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}" allow-clear
@@ -154,6 +160,7 @@
 </template>
 <script>
   import { JeecgListMixin } from '@/mixins/JeecgListMixin'
+  import { ReportExportMixin } from '@/mixins/ReportExportMixin'
   import { getFormatDate, getPrevMonthFormatDate } from '@/utils/util'
   import {getAction} from '@/api/manage'
   import {findBySelectOrgan, queryMaterialCategoryTreeList, getAllOrganizationTreeByUser} from '@/api/api'
@@ -162,7 +169,7 @@
   import Vue from 'vue'
   export default {
     name: "InMaterialCount",
-    mixins:[JeecgListMixin],
+    mixins:[JeecgListMixin, ReportExportMixin],
     components: {
       JEllipsis,
       VNodes: {
@@ -334,12 +341,12 @@
           this.loadData(1);
         }
       },
-      exportExcel() {
+      exportExcel(rows) {
         let list = []
         let head = '条码,名称,规格,型号,颜色,品牌,制造商,类别,单位,入库数量,入库金额'
-        for (let i = 0; i < this.dataSource.length; i++) {
+        for (let i = 0; i < rows.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = rows[i]
           item.push(ds.barCode, ds.mName, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs, ds.categoryName, ds.materialUnit, ds.numSum, ds.priceSum)
           list.push(item)
         }
