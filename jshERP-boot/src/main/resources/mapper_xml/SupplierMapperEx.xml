@@ -84,7 +84,7 @@
     </select>
 
     <select id="findByTypeAndKey" resultType="com.jsh.erp.datasource.entities.Supplier">
-        select id, supplier, advance_in from jsh_supplier
+        select id, supplier, advance_in, sort from jsh_supplier
         where type = #{type} and enabled = 1
         <if test="key != null and key !=''">
             <bind name="bindKey" value="'%'+key+'%'"/>

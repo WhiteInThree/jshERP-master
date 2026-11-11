@@ -204,6 +204,7 @@ public class SupplierController extends BaseController {
                     item.put("id", supplier.getId());
                     //供应商名称
                     item.put("supplier", supplier.getSupplier());
+                    item.put("sort", supplier.getSort());
                     dataArray.add(item);
                 }
             }

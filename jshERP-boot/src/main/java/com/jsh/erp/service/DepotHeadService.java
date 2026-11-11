@@ -1745,6 +1745,12 @@ public class DepotHeadService {
         }
         /**入库和出库处理单据子表信息*/
         depotItemService.saveDetials(rows,depotHead.getId(), "update", preDepotHead, request);
+        // 编辑未审核领用申请后保存并审核，与新增和列表审核使用同一出库流程。
+        if (BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())
+                && BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
+            autoConfirmIssue(getDepotHead(depotHead.getId()), request);
+        }
         /**更新最终欠款*/
         updateLastDebtByBillId(depotHead.getDebt(), depotHead.getId());
         String statusStr = depotHead.getStatus().equals("1")?"[审核]":"";

@@ -1476,7 +1476,7 @@ public class DepotItemService {
                     if(StringUtil.isNotEmpty(detailMap.get("unitPrice"))) {
                         unitPrice = new BigDecimal(detailMap.get("unitPrice"));
                     } else {
-                        if("CGDD".equals(prefixNo)) {
+                        if("QGD".equals(prefixNo) || "CGDD".equals(prefixNo)) {
                             unitPrice = m.getPurchaseDecimal();
                         } else if("XSDD".equals(prefixNo)) {
                             unitPrice = m.getWholesaleDecimal();

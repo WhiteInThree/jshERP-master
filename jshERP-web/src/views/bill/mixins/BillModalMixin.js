@@ -205,13 +205,16 @@ export const BillModalMixin = {
         }
       })
     },
-    initSupplier(isChecked) {
+    initSupplier(isChecked, defaultSort) {
       let that = this;
-      findBySelectSup({organId: this.model.organId, limit:1}).then((res)=>{
+      findBySelectSup({organId: this.model.organId, limit: defaultSort === undefined ? 1 : undefined}).then((res)=>{
         if(res) {
           that.supList = res
           if(isChecked && res.length>0) {
-            that.form.setFieldsValue({'organId': res[0].id})
+            const supplier = defaultSort === undefined ? res[0] : res.find(item => Number(item.sort) === defaultSort)
+            if (supplier && (defaultSort === undefined || !that.form.getFieldValue('organId'))) {
+              that.form.setFieldsValue({'organId': supplier.id})
+            }
           }
         }
       });

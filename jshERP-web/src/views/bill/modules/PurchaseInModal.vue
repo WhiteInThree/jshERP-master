@@ -412,7 +412,7 @@
           this.copyAddInit(this.prefixNo)
         }
         this.initSystemConfig()
-        this.initSupplier(0)
+        this.initSupplier(this.action === 'add' && !(this.transferParam && this.transferParam.number), 1)
         this.initDepot()
         this.initAccount(0)
         this.initPlatform()
